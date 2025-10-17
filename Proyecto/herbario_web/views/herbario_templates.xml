@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Página principal /herbario -->
+    <template id="herbario_home" name="Herbario Home">
+        <t t-call="website.layout">
+            <div id="wrap" class="oe_structure">
+                <section class="s_text_block pt80 pb80">
+                    <div class="container">
+                        <h1>Bienvenido al Herbario Virtual</h1>
+                        <p>Explora nuestra colección digital de especímenes botánicos. Gestiona plantas y descubre la biodiversidad.</p>
+                        <a href="/herbario/repositorio" class="btn btn-primary">Ver Repositorio</a>
+                        <a href="/herbario/galeria" class="btn btn-secondary ml-2">Ver Galería</a>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Estadísticas /herbario/stats -->
+    <template id="herbario_stats" name="Estadísticas">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <section class="s_text_block pt80 pb80">
+                    <div class="container">
+                        <h1>Estadísticas del Herbario</h1>
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h3><t t-esc="total_especimenes"/></h3>
+                                <p>Total Especímenes</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h3><t t-esc="familias_unicas"/></h3>
+                                <p>Familias Únicas</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h3><t t-esc="imagenes_count"/></h3>
+                                <p>Imágenes Subidas</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h3><t t-esc="activos_count"/></h3>
+                                <p>Especímenes Activos</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Repositorio /herbario/repositorio – Cards con CRUD -->
+    <template id="herbario_repo" name="Repositorio">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <section class="s_text_block pt80 pb80">
+                    <div class="container">
+                        <h1>Repositorio de Especímenes</h1>
+                        <div class="row" t-attf-id="especimenes_list">
+                            <t t-foreach="especimenes" t-as="especimen">
+                                <div class="col-lg-4 col-md-6 mb-4">
+                                    <div class="card h-100">
+                                        <t t-if="especimen.imagen">
+                                            <img t-att-src="'/web/image/herbario.especimen/' + str(especimen.id) + '/imagen'" class="card-img-top" t-att-alt="'Imagen de ' + especimen.nombre_comun"/>
+                                        </t>
+                                        <div class="card-body d-flex flex-column">
+                                            <h5 class="card-title"><t t-esc="especimen.nombre_comun"/> (<t t-esc="especimen.nombre_cientifico"/>)</h5>
+                                            <p class="card-text flex-grow-1">
+                                                <strong>Familia:</strong> <t t-esc="especimen.familia"/><br/>
+                                                <strong>Fecha:</strong> <t t-esc="especimen.fecha_coleccion"/><br/>
+                                                <strong>Estado:</strong> <span t-att-class="'badge badge-' + ('success' if especimen.estado == 'activo' else 'secondary')"><t t-esc="especimen.estado.title()"/></span>
+                                            </p>
+                                            <div class="mt-auto">
+                                                <a t-att-href="'/herbario/detalle/' + str(especimen.id)" class="btn btn-info btn-sm">Ver Detalle</a>
+                                                <t t-if="request.env.user._is_public() == False">
+                                                    <a t-att-href="'/herbario/editar/' + str(especimen.id)" class="btn btn-warning btn-sm ml-1">Editar</a>
+                                                    <form t-att-action="'/herbario/borrar/' + str(especimen.id)" method="post" style="display: inline-block;">
+                                                        <button type="submit" class="btn btn-danger btn-sm ml-1" onclick="return confirm('¿Estás seguro de borrar este especímen?')">Borrar</button>
+                                                    </form>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+
+                        <!-- Formulario Create (solo para logueados) -->
+                        <t t-if="request.env.user._is_public() == False">
+                            <div class="row mt-5">
+                                <div class="col-12">
+                                    <h2>Agregar Nuevo Especímen</h2>
+                                    <form action="/herbario/crear" method="post" enctype="multipart/form-data" class="needs-validation" novalidate="novalidate">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Nombre Común *</label>
+                                                    <input type="text" name="nombre_comun" class="form-control" required="required"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Nombre Científico *</label>
+                                                    <input type="text" name="nombre_cientifico" class="form-control" required="required"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Familia Botánica</label>
+                                                    <input type="text" name="familia" class="form-control"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Fecha de Recolección</label>
+                                                    <input type="date" name="fecha_coleccion" class="form-control" t-att-value="today" value=""/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Ubicación</label>
+                                                    <input type="text" name="ubicacion" class="form-control" placeholder="Ej. Jardín Botánico"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Imagen</label>
+                                                    <input type="file" name="imagen" accept="image/*" class="form-control"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Descripción</label>
+                                            <textarea name="descripcion" rows="4" class="form-control"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-success">Crear Especímen</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="alert alert-info mt-4">
+                                <p>Inicia sesión para agregar nuevos especímenes.</p>
+                                <a href="/web/login" class="btn btn-primary">Iniciar Sesión</a>
+                            </div>
+                        </t>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Galería /herbario/galeria -->
+    <template id="herbario_gallery" name="Galería">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <section class="s_text_block pt80 pb80">
+                    <div class="container">
+                        <h1>Galería de Imágenes</h1>
+                        <div class="row">
+                            <t t-foreach="especimenes_con_imagen" t-as="especimen">
+                                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                                    <div class="text-center">
+                                        <a t-att-href="'/herbario/detalle/' + str(especimen.id)" class="d-block">
+                                            <img t-att-src="'/web/image/herbario.especimen/' + str(especimen.id) + '/imagen'" class="img-fluid rounded shadow" style="height: 250px; object-fit: cover;" t-att-alt="'Galería: ' + especimen.nombre_comun"/>
+                                        </a>
+                                        <p class="mt-2 mb-0"><strong><t t-esc="especimen.nombre_comun"/></strong><br/><small><t t-esc="especimen.nombre_cientifico"/></small></p>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                        <t t-if="not especimenes_con_imagen">
+                            <div class="alert alert-warning text-center">
+                                <p>No hay imágenes en la galería aún.</p>
+                            </div>
+                        </t>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- About /herbario/about -->
+    <template id="herbario_about" name="About">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <section class="s_text_block pt80 pb80">
+                    <div class="container">
+                        <h1>Acerca del Herbario Virtual</h1>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <p>Este herbario digital ha sido desarrollado con Odoo 17 para catalogar y compartir especímenes botánicos. Permite a investigadores, estudiantes y entusiastas explorar la diversidad vegetal de manera interactiva.</p>
+                                <p>Características principales:</p>
+                                <ul>
+                                    <li>Repositorio con detalles completos de cada planta.</li>
+                                    <li>Galería visual de imágenes.</li>
+                                    <li>Estadísticas en tiempo real.</li>
+                                    <li>CRUD completo para administradores.</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <h5>Contacto</h5>
+                                <p>Email: tu-email@example.com<br/>Teléfono: +123 456 789</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Formulario de Edición /herbario/editar/ID -->
+    <template id="herbario_edit_form" name="Editar Especímen">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <section class="s_text_block pt80 pb80">
+                    <div class="container">
+                        <h1>Editar Especímen: <t t-esc="especimen.nombre_comun"/></h1>
+                        <form t-att-action="'/herbario/editar/' + str(especimen.id)" method="post" enctype="multipart/form-data" class="needs-validation" novalidate="novalidate">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nombre Común *</label>
+                                        <input type="text" name="nombre_comun" t-att-value="especimen.nombre_comun" class="form-control" required="required"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nombre Científico *</label>
+                                        <input type="text" name="nombre_cientifico" t-att-value="especimen.nombre_cientifico" class="form-control" required="required"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Familia Botánica</label>
+                                        <input type="text" name="familia" t-att-value="especimen.familia" class="form-control"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Fecha de Recolección</label>
+                                        <input type="date" name="fecha_coleccion" t-att-value="especimen.fecha_coleccion" class="form-control"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Ubicación</label>
+                                        <input type="text" name="ubicacion" t-att-value="especimen.ubicacion" class="form-control"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Estado</label>
+                                        <select name="estado" class="form-control">
+                                            <option value="activo" t-att-selected="especimen.estado == 'activo'">Activo</option>
+                                            <option value="archivado" t-att-selected="especimen.estado == 'archivado'">Archivado</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Visible en Web</label>
+                                        <input type="checkbox" name="es_publico" t-att-checked="especimen.es_publico" class="form-check-input" id="es_publico_check"/>
+                                        <label for="es_publico_check" class="form-check-label">Sí (marca para mostrar en sitio público)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nueva Imagen (opcional)</label>
+                                        <input type="file" name="imagen" accept="image/*" class="form-control"/>
+                                        <t t-if="especimen.imagen">
+                                            <small class="form-text text-muted">Imagen actual: <img t-att-src="'/web/image/herbario.especimen/' + str(especimen.id) + '/imagen'" style="width: 50px; height: auto;"/></small>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Descripción</label>
+                                <textarea name="descripcion" rows="4" class="form-control"><t t-esc="especimen.descripcion or ''"/></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                            <a t-att-href="'/herbario/detalle/' + str(especimen.id)" class="btn btn-secondary ml-2">Cancelar</a>
+                        </form>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+
+    <!-- Detalle individual /herbario/detalle/ID -->
+    <template id="herbario_detalle" name="Detalle Especímen">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <section class="s_text_block pt80 pb80">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <t t-if="especimen.imagen">
+                                    <img t-att-src="'/web/image/herbario.especimen/' + str(especimen.id) + '/imagen'" class="img-fluid rounded shadow mb-3" style="max-width: 100%; height: auto;"/>
+                                </t>
+                                <t t-else="">
+                                    <div class="bg-light p-4 text-center rounded shadow">
+                                        <h5>Sin Imagen</h5>
+                                        <p>Imagen no disponible para este especímen.</p>
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="col-md-8">
+                                <h1><t t-esc="especimen.nombre_comun"/> (<t t-esc="especimen.nombre_cientifico"/>)</h1>
+                                <p><strong>Familia Botánica:</strong> <t t-esc="especimen.familia or 'No especificada'"/></p>
+                                <p><strong>Fecha de Recolección:</strong> <t t-esc="especimen.fecha_coleccion or 'No especificada'"/></p>
+                                <p><strong>Ubicación:</strong> <t t-esc="especimen.ubicacion or 'No especificada'"/></p>
+                                <p><strong>Estado:</strong> <span t-att-class="'badge badge-' + ('success' if especimen.estado == 'activo' else 'secondary')"><t t-esc="especimen.estado.title()"/></span></p>
+                                <t t-if="especimen.es_publico">
+                                    <p><strong>Visibilidad:</strong> <span class="badge badge-success">Público</span></p>
+                                </t>
+                                <t t-else="">
+                                    <p><strong>Visibilidad:</strong> <span class="badge badge-warning">Privado</span></p>
+                                </t>
+                                <div class="mt-4">
+                                    <h5>Descripción</h5>
+                                    <p><t t-esc="especimen.descripcion or 'Sin descripción disponible.'"/></p>
+                                </div>
+                                <t t-if="request.env.user._is_public() == False">
+                                    <a t-att-href="'/herbario/editar/' + str(especimen.id)" class="btn btn-warning">Editar</a>
+                                    <form t-att-action="'/herbario/borrar/' + str(especimen.id)" method="post" style="display: inline-block; margin-left: 10px;">
+                                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Borrar este especímen?')">Borrar</button>
+                                    </form>
+                                </t>
+                                <a href="/herbario/repositorio" class="btn btn-secondary ml-2">Volver al Repositorio</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>           
+</odoo>

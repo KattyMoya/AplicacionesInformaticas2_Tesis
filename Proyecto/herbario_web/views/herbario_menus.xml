@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Menús de website -->
+        <record id="menu_herbario_web_root" model="website.menu">
+            <field name="name">Herbario</field>
+            <field name="url">/herbario</field>
+            <field name="parent_id" ref="website.main_menu"/>
+            <field name="sequence" type="int">20</field>
+            <field name="is_visible" eval="True"/>
+        </record>
+        
+        <record id="menu_herbario_stats" model="website.menu">
+            <field name="name">Estadísticas</field>
+            <field name="url">/herbario/stats</field>
+            <field name="parent_id" ref="menu_herbario_web_root"/>
+            <field name="sequence" type="int">10</field>
+            <field name="is_visible" eval="True"/>
+        </record>
+        
+        <record id="menu_herbario_repo" model="website.menu">
+            <field name="name">Repositorio</field>
+            <field name="url">/herbario/repositorio</field>
+            <field name="parent_id" ref="menu_herbario_web_root"/>
+            <field name="sequence" type="int">20</field>
+            <field name="is_visible" eval="True"/>
+        </record>
+        
+        <record id="menu_herbario_gallery" model="website.menu">
+            <field name="name">Galería</field>
+            <field name="url">/herbario/galeria</field>
+            <field name="parent_id" ref="menu_herbario_web_root"/>
+            <field name="sequence" type="int">30</field>
+            <field name="is_visible" eval="True"/>
+        </record>
+        
+        <record id="menu_herbario_about" model="website.menu">
+            <field name="name">About</field>
+            <field name="url">/herbario/about</field>
+            <field name="parent_id" ref="menu_herbario_web_root"/>
+            <field name="sequence" type="int">40</field>
+            <field name="is_visible" eval="True"/>
+        </record>
+        
+        <!-- Menú backend -->
+        <record id="action_herbario_especimen_web" model="ir.actions.act_window">
+            <field name="name">Especímenes Web</field>
+            <field name="res_model">herbario.especimen</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('es_publico','=',True)]</field>
+        </record>
+        
+        <menuitem id="menu_herbario_backend_web" 
+                  name="Especímenes Web" 
+                  parent="herbario_virtual.menu_herbario_root" 
+                  action="action_herbario_especimen_web" 
+                  sequence="10"/>
+    </data>
+</odoo>
