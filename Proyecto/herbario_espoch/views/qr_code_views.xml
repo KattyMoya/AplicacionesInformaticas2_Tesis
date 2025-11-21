@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Árbol -->
+    <record id="view_herbario_qr_code_tree" model="ir.ui.view">
+        <field name="name">herbario.qr.code.tree</field>
+        <field name="model">herbario.qr.code</field>
+        <field name="arch" type="xml">
+            <tree string="Códigos QR">
+                <field name="qr_image" widget="image" width="100"/>
+                <field name="taxon_name"/>
+                <field name="qr_url" widget="url"/>
+                <field name="resolution"/>
+                <field name="version"/>
+                <field name="download_count"/>
+                <field name="scan_count"/>
+                <field name="generation_date"/>
+                <field name="obsolete" widget="boolean_toggle"/>
+                <button name="action_download" type="object" string="Descargar" icon="fa-download"/>
+                <button name="action_regenerate" type="object" string="Regenerar" icon="fa-refresh"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista Formulario -->
+    <record id="view_herbario_qr_code_form" model="ir.ui.view">
+        <field name="name">herbario.qr.code.form</field>
+        <field name="model">herbario.qr.code</field>
+        <field name="arch" type="xml">
+            <form string="Código QR" create="false">
+                <header>
+                    <button name="action_regenerate" string="Regenerar QR" type="object" class="oe_highlight" icon="fa-refresh"/>
+                    <button name="action_download" string="Descargar" type="object" icon="fa-download"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_obsolete" type="object" class="oe_stat_button" icon="fa-archive">
+                            <field name="obsolete" widget="boolean_button" options="{'terminology': {'string_true': 'Obsoleto', 'string_false': 'Activo'}}"/>
+                        </button>
+                    </div>
+
+                    <field name="qr_image" widget="image" class="oe_avatar" options="{'preview_image': 'qr_image', 'size': [0, 400]}"/>
+
+                    <!--<div class="oe_title">
+                        <label for="specimen_id"/>
+                        <h1><field name="specimen_id" readonly="1" options="{'no_create': True}"/></h1>
+                    </div>-->
+                    <div class="oe_title">
+                        <h1>
+                            <field name="taxon_name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group string="Información del Espécimen">
+                        <field name="taxon_name" readonly="1"/>
+                    </group>
+
+                    <group>
+                        <group string="Información del QR">
+                            <field name="qr_url" widget="url" readonly="1"/>
+                            <!--field name="qr_data" readonly="1"/-->  <!-- Comenta o quita si no es necesario -->
+                            <field name="resolution"/>
+                            <field name="version"/>
+                            <!--field name="error_correction"/-->  <!-- Comenta o quita si no es necesario -->
+                            <!--field name="box_size"/-->  <!-- Comenta o quita si no es necesario -->
+                            <!--field name="border"/-->  <!-- Comenta o quita si no es necesario -->
+                        </group>
+                        <group string="Estadísticas de Uso">
+                            <field name="download_count" readonly="1"/>
+                            <field name="scan_count" readonly="1"/>
+                            <field name="last_scanned_at" readonly="1"/>
+                            <field name="generation_date" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Estado">
+                            <field name="obsolete"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Historial de Escaneos">
+                            <field name="scan_log_ids" readonly="1">
+                                <tree>
+                                    <field name="scanned_at"/>
+                                    <field name="ip_address"/>
+                                    <field name="user_agent"/>
+                                    <field name="location"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Datos Técnicos">
+                            <group>
+                                <!--field name="image_format"/-->  <!-- Comenta o quita si no es necesario -->
+                                <field name="file_size_bytes" readonly="1"/>
+                                <field name="checksum" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Kanban -->
+    <record id="view_herbario_qr_code_kanban" model="ir.ui.view">
+        <field name="name">herbario.qr.code.kanban</field>
+        <field name="model">herbario.qr.code</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="id"/>
+                <field name="qr_image"/>
+                <field name="obsolete"/>
+                <field name="scan_count"/>
+                <field name="download_count"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-att-src="kanban_image('herbario.qr.code', 'qr_image', record.id.raw_value)" alt="Código QR"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong><field name="taxon_name"/></strong>
+                                <div class="mt-2">
+                                    <span class="badge badge-info">
+                                        <i class="fa fa-eye"/> <field name="scan_count"/> escaneos
+                                    </span>
+                                    <span class="badge badge-success ml-1">
+                                        <i class="fa fa-download"/> <field name="download_count"/> descargas
+                                    </span>
+                                </div>
+                                <div class="mt-1">
+                                    <span t-if="record.obsolete.raw_value" class="badge badge-danger">Obsoleto</span>
+                                    <span t-else="" class="badge badge-success">Activo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vista de Búsqueda -->
+    <record id="view_herbario_qr_code_search" model="ir.ui.view">
+        <field name="name">herbario.qr.code.search</field>
+        <field name="model">herbario.qr.code</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Códigos QR">
+                <field name="qr_url"/>
+                <filter name="filter_active" string="Activos" domain="[('obsolete', '=', False)]"/>
+                <filter name="filter_obsolete" string="Obsoletos" domain="[('obsolete', '=', True)]"/>
+                <filter name="filter_scanned" string="Escaneados" domain="[('scan_count', '>', 0)]"/>
+                <filter name="filter_not_scanned" string="No Escaneados" domain="[('scan_count', '=', 0)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_taxon" string="Taxón" context="{'group_by': 'taxon_id'}"/>
+                    <filter name="group_date" string="Fecha de Generación" context="{'group_by': 'generation_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_herbario_qr_code" model="ir.actions.act_window">
+        <field name="name">Códigos QR</field>
+        <field name="res_model">herbario.qr.code</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Los códigos QR se generan automáticamente
+            </p>
+            <p>
+                Cada espécimen tiene su código QR único para acceso rápido a su información digital.
+            </p>
+        </field>
+    </record>
+</odoo>

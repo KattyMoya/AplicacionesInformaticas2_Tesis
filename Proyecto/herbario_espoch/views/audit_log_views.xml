@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Árbol -->
+    <record id="view_herbario_audit_log_tree" model="ir.ui.view">
+        <field name="name">herbario.audit.log.tree</field>
+        <field name="model">herbario.audit.log</field>
+        <field name="arch" type="xml">
+            <tree string="Historial de Cambios" 
+                  create="false" 
+                  edit="false" 
+                  delete="false"
+                  decoration-info="action_type == 'create'"
+                  decoration-warning="action_type == 'write'"
+                  decoration-danger="action_type == 'delete'">
+                <field name="timestamp"/>
+                <field name="res_id_display" string="Registro Afectado"/> <!-- Este campo es un enlace dinámico -->
+                <field name="action_type" widget="badge"/>
+                <field name="user_name"/>
+                <field name="description"/>
+                <field name="time_ago"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista Formulario -->
+    <record id="view_herbario_audit_log_form" model="ir.ui.view">
+        <field name="name">herbario.audit.log.form</field>
+        <field name="model">herbario.audit.log</field>
+        <field name="arch" type="xml">
+            <form string="Detalle del Historial" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group string="Información General">
+                            <field name="res_id_display" string="Registro Afectado" readonly="1"/> <!-- Enlace dinámico -->
+                            <field name="action_type" readonly="1"/>
+                            <field name="timestamp" readonly="1"/>
+                            <field name="time_ago" readonly="1"/>
+                        </group>
+                        <group string="Usuario">
+                            <field name="user_id" readonly="1"/>
+                            <field name="user_name" readonly="1"/>
+                            <field name="ip_address" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Descripción del Cambio">
+                        <field name="description" nolabel="1" readonly="1"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Campos Modificados">
+                            <field name="field_modified" readonly="1"/>  <!-- Cambio: de "field_name" a "field_modified" para coincidir con el modelo -->
+                            <group>
+                                <group string="Valor Anterior">
+                                    <field name="old_value" nolabel="1" readonly="1" widget="text"/>
+                                </group>
+                                <group string="Valor Nuevo">
+                                    <field name="new_value" nolabel="1" readonly="1" widget="text"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Datos Técnicos">
+                            <group>
+                                <field name="user_agent" readonly="1"/>
+                                <!--field name="browser_info" readonly="1"/-->  <!-- Comentado: No existe en el modelo; agrégalo si lo necesitas -->
+                                <!--field name="os_info" readonly="1"/-->  <!-- Comentado: No existe en el modelo; agrégalo si lo necesitas -->
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista de Búsqueda -->
+    <record id="view_herbario_audit_log_search" model="ir.ui.view">
+        <field name="name">herbario.audit.log.search</field>
+        <field name="model">herbario.audit.log</field>
+        <field name="arch" type="xml">
+            <search string="Buscar en Historial">
+                <field name="res_id_display" string="Registro Afectado"/> <!-- Búsqueda por nombre del registro -->
+                <field name="user_name"/>
+                <field name="description"/>
+                <field name="action_type"/>
+                
+                <filter name="filter_creates" string="Creaciones" domain="[('action_type', '=', 'create')]"/>
+                <filter name="filter_updates" string="Modificaciones" domain="[('action_type', '=', 'write')]"/>
+                <filter name="filter_deletes" string="Eliminaciones" domain="[('action_type', '=', 'delete')]"/>
+                
+                <separator/>
+                <filter name="filter_today" string="Hoy" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_this_week" string="Esta Semana" domain="[('timestamp', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_this_month" string="Este Mes" domain="[('timestamp', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
+                
+                <separator/>
+                <filter name="filter_my_actions" string="Mis Acciones" domain="[('user_id', '=', uid)]"/>
+                
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_model" string="Tipo de Registro" context="{'group_by': 'res_model'}"/> <!-- Agrupar por Espécimen, Imagen, etc. -->
+                    <filter name="group_action" string="Tipo de Acción" context="{'group_by': 'action_type'}"/>
+                    <filter name="group_user" string="Usuario" context="{'group_by': 'user_name'}"/>
+                    <filter name="group_date" string="Fecha" context="{'group_by': 'timestamp:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Timeline (opcional) -->
+    <record id="view_herbario_audit_log_timeline" model="ir.ui.view">
+        <field name="name">herbario.audit.log.timeline</field>
+        <field name="model">herbario.audit.log</field>
+        <field name="arch" type="xml">
+            <timeline date_start="timestamp" 
+                      default_group_by="res_id_display"
+                      event_open_popup="true"
+                      colors="#e74c3c:action_type == 'delete';#f39c12:action_type == 'write';#27ae60:action_type == 'create'">
+                <field name="user_name"/>
+                <field name="action_type"/>
+                <field name="description"/>
+            </timeline>
+        </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_herbario_audit_log" model="ir.actions.act_window">
+        <field name="name">Historial de Cambios</field>
+        <field name="res_model">herbario.audit.log</field>
+        <field name="view_mode">tree,form</field> <!-- Quitado 'timeline' -->
+        <field name="context">{'search_default_filter_this_month': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay registros en el historial
+            </p>
+            <p>
+                El historial registra automáticamente todos los cambios realizados en los especímenes.
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menú Principal del Website -->
+    <record id="menu_herbario_website_root" model="website.menu">
+        <field name="name">Herbario Virtual</field>
+        <field name="url">/herbario</field>
+        <field name="parent_id" ref="website.main_menu"/>
+        <field name="sequence">50</field>
+        <field name="website_id" eval="False"/>
+    </record>
+
+    <!-- Submenú: Inicio -->
+    <record id="menu_herbario_home" model="website.menu">
+        <field name="name">Inicio</field>
+        <field name="url">/herbario</field>
+        <field name="parent_id" ref="menu_herbario_website_root"/>
+        <field name="sequence">10</field>
+        <field name="website_id" eval="False"/>
+    </record>
+
+    <!-- Submenú: Repositorio -->
+    <record id="menu_herbario_repository" model="website.menu">
+        <field name="name">Repositorio</field>
+        <field name="url">/herbario/repositorio</field>
+        <field name="parent_id" ref="menu_herbario_website_root"/>
+        <field name="sequence">20</field>
+        <field name="website_id" eval="False"/>
+    </record>
+
+    <!-- Submenú: Galería -->
+    <record id="menu_herbario_gallery" model="website.menu">
+        <field name="name">Galería</field>
+        <field name="url">/herbario/galeria</field>
+        <field name="parent_id" ref="menu_herbario_website_root"/>
+        <field name="sequence">30</field>
+        <field name="website_id" eval="False"/>  <!-- ← AGREGAR ESTA LÍNEA -->
+        <!--<field name="is_visible" eval="True"/>-->
+    </record>
+
+    <!-- Submenú: Estadísticas -->
+    <record id="menu_herbario_statistics" model="website.menu">
+        <field name="name">Estadísticas</field>
+        <field name="url">/herbario/estadisticas</field>
+        <field name="parent_id" ref="menu_herbario_website_root"/>
+        <field name="sequence">40</field>
+        <field name="website_id" eval="False"/>
+    </record>
+
+    <!-- Submenú: Mapa -->
+    <record id="menu_herbario_map" model="website.menu">
+        <field name="name">Mapa</field>
+        <field name="url">/herbario/mapa</field>
+        <field name="parent_id" ref="menu_herbario_website_root"/>
+        <field name="sequence">50</field>
+        <field name="website_id" eval="False"/>
+    </record>
+
+    <!-- Submenú: Acerca de -->
+    <record id="menu_herbario_about" model="website.menu">
+        <field name="name">Acerca de</field>
+        <field name="url">/herbario/about</field>
+        <field name="parent_id" ref="menu_herbario_website_root"/>
+        <field name="sequence">60</field>
+        <field name="website_id" eval="False"/>
+    </record>
+</odoo>

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== VISTAS PARA MODELOS GEOGRÁFICOS ==================== -->
+
+    <!-- Modelo: herbario.country -->
+    <record id="view_herbario_country_tree" model="ir.ui.view">
+        <field name="name">herbario.country.tree</field>
+        <field name="model">herbario.country</field>
+        <field name="arch" type="xml">
+            <tree string="Países" editable="bottom">
+                <field name="name"/>
+                <field name="code"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_herbario_country" model="ir.actions.act_window">
+        <field name="name">Países</field>
+        <field name="res_model">herbario.country</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- Modelo: herbario.province -->
+    <record id="view_herbario_province_tree" model="ir.ui.view">
+        <field name="name">herbario.province.tree</field>
+        <field name="model">herbario.province</field>
+        <field name="arch" type="xml">
+            <tree string="Provincias" editable="bottom">
+                <field name="name"/>
+                <field name="country_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_herbario_province" model="ir.actions.act_window">
+        <field name="name">Provincias</field>
+        <field name="res_model">herbario.province</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- Modelo: herbario.lower.political -->
+    <record id="view_herbario_lower_political_tree" model="ir.ui.view">
+        <field name="name">herbario.lower.political.tree</field>
+        <field name="model">herbario.lower.political</field>
+        <field name="arch" type="xml">
+            <tree string="Cantones/Distritos" editable="bottom">
+                <field name="name"/>
+                <field name="province_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_herbario_lower_political" model="ir.actions.act_window">
+        <field name="name">Cantones/Distritos</field>
+        <field name="res_model">herbario.lower.political</field>
+        <field name="view_mode">tree</field>
+    </record>
+
+    <!-- Modelo: herbario.locality -->
+    <record id="view_herbario_locality_tree" model="ir.ui.view">
+        <field name="name">herbario.locality.tree</field>
+        <field name="model">herbario.locality</field>
+        <field name="arch" type="xml">
+            <tree string="Localidades">
+                <field name="name"/>
+                <field name="lower_id"/>
+                <field name="ubicacion_completa"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_herbario_locality_form" model="ir.ui.view">
+        <field name="name">herbario.locality.form</field>
+        <field name="model">herbario.locality</field>
+        <field name="arch" type="xml">
+            <form string="Localidad">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="lower_id"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_herbario_locality" model="ir.actions.act_window">
+        <field name="name">Localidades</field>
+        <field name="res_model">herbario.locality</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Modelo: herbario.vicinity -->
+    <record id="view_herbario_vicinity_tree" model="ir.ui.view">
+        <field name="name">herbario.vicinity.tree</field>
+        <field name="model">herbario.vicinity</field>
+        <field name="arch" type="xml">
+            <tree string="Vecindades">
+                <field name="name"/>
+                <field name="locality_id"/>
+            </tree>
+        </field>
+    </record>
+
+     <record id="view_herbario_vicinity_form" model="ir.ui.view">
+        <field name="name">herbario.vicinity.form</field>
+        <field name="model">herbario.vicinity</field>
+        <field name="arch" type="xml">
+            <form string="Vecindad">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="locality_id"/>
+                        <field name="description"/>
+                    </group>
+                    <notebook>
+                        <page string="Coordenadas de Referencia">
+                            <field name="coordinate_ids">
+                                <tree editable="bottom">
+                                    <field name="tipo_punto"/>
+                                    <field name="latitude"/>
+                                    <field name="longitude"/>
+                                    <field name="elevation"/>
+                                    <field name="descripcion"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_herbario_vicinity" model="ir.actions.act_window">
+        <field name="name">Vecindades</field>
+        <field name="res_model">herbario.vicinity</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Modelo: herbario.coordinates -->
+    <record id="view_herbario_coordinates_form" model="ir.ui.view">
+        <field name="name">herbario.coordinates.form</field>
+        <field name="model">herbario.coordinates</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="vicinity_id"/>
+                            <field name="tipo_punto"/>
+                            <field name="descripcion"/>
+                        </group>
+                        <group string="Entrada Rápida de Coordenadas">
+                            <field name="coordenadas_zona" placeholder="Ej: 01.34S 78.40W"/>
+                        </group>
+                        <group string="Coordenadas Decimales">
+                            <label for="latitude" string="Latitud/Longitud"/>
+                            <div class="o_row">
+                                <field name="latitude"/>
+                                <field name="longitude"/>
+                            </div>
+                            <field name="elevation"/>
+                            <field name="utm"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==================== MENÚS DE CONFIGURACIÓN ==================== -->
+    <!-- Menú Padre para Configuración (Asegúrate de que el menú raíz 'herbario_menu_root' exista) -->
+    <menuitem
+        id="herbario_menu_config"
+        name="Configuración"
+        parent="herbario_espoch.menu_herbario_root"
+        sequence="100"/>
+
+    <menuitem
+        id="menu_herbario_config_geography"
+        name="Ubicaciones Geográficas"
+        parent="herbario_menu_config"
+        sequence="10"/>
+
+    <menuitem
+        id="menu_herbario_country"
+        name="Países"
+        parent="menu_herbario_config_geography"
+        action="action_herbario_country"
+        sequence="1"/>
+
+    <menuitem
+        id="menu_herbario_province"
+        name="Provincias"
+        parent="menu_herbario_config_geography"
+        action="action_herbario_province"
+        sequence="2"/>
+
+    <menuitem
+        id="menu_herbario_lower_political"
+        name="Cantones/Distritos"
+        parent="menu_herbario_config_geography"
+        action="action_herbario_lower_political"
+        sequence="3"/>
+
+    <menuitem
+        id="menu_herbario_locality"
+        name="Localidades"
+        parent="menu_herbario_config_geography"
+        action="action_herbario_locality"
+        sequence="4"/>
+
+    <menuitem
+        id="menu_herbario_vicinity"
+        name="Vecindades"
+        parent="menu_herbario_config_geography"
+        action="action_herbario_vicinity"
+        sequence="5"/>
+
+</odoo>

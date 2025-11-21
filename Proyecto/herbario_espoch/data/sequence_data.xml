@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== SECUENCIA PARA CÓDIGO DE HERBARIO ==================== -->
+    <record id="sequence_herbario_specimen_code" model="ir.sequence">
+        <field name="name">Código de Espécimen Herbario</field>
+        <field name="code">herbario.specimen.code</field>
+        <field name="prefix">CHEP-</field>  <!-- CAMBIO: HERB- a CHEP- -->
+        <field name="padding">7</field>     <!-- CAMBIO: 6 a 7 para formato 0000001 -->
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+        <field name="implementation">standard</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- ==================== SECUENCIA PARA NÚMERO DE COLECCIÓN ==================== -->
+    <record id="sequence_collection_number" model="ir.sequence">
+        <field name="name">Número de Colección</field>
+        <field name="code">herbario.collection.number</field>
+        <field name="prefix">COL-</field>
+        <field name="padding">5</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+        <field name="implementation">standard</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- ==================== SECUENCIA PARA CÓDIGO QR ==================== -->
+    <record id="sequence_qr_code" model="ir.sequence">
+        <field name="name">Código QR</field>
+        <field name="code">herbario.qr.code</field>
+        <field name="prefix">QR-HERB-</field>
+        <field name="padding">8</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+        <field name="implementation">standard</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- ==================== SECUENCIA PARA NÚMERO DE CARTULINA ==================== -->
+    <record id="sequence_cartulina_number" model="ir.sequence">
+        <field name="name">Número de Cartulina</field>
+        <field name="code">herbario.cartulina.number</field>
+        <field name="prefix">CART-</field>
+        <field name="padding">5</field>
+        <field name="number_increment">1</field>
+        <field name="number_next">1</field>
+        <field name="implementation">standard</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- ==================== DATOS DE EJEMPLO (OPCIONAL) ==================== -->
+    <!-- Puedes descomentar esto si quieres datos de prueba -->
+    <!--
+    <record id="demo_specimen_1" model="herbario.specimen">
+        <field name="nombre_cientifico">Quercus humboldtii Bonpl.</field>
+        <field name="familia">Fagaceae</field>
+        <field name="genero">Quercus</field>
+        <field name="especie">humboldtii</field>
+        <field name="autor_cientifico">Bonpl.</field>
+        <field name="status">activo</field>
+        <field name="es_publico" eval="True"/>
+        <field name="descripcion_especie">Árbol caducifolio de gran tamaño, característico de los bosques andinos.</field>
+    </record>
+    -->
+</odoo>

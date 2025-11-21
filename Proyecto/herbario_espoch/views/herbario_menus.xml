@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== MENÚ PRINCIPAL ==================== -->
+    <menuitem id="menu_herbario_root"
+              name="Herbario ESPOCH"
+              web_icon="herbario_espoch,static/description/icon.png"
+              sequence="10"/>
+
+    <!-- ==================== SUBMENÚS PRINCIPALES ==================== -->
+    
+    <!-- Especímenes -->
+    <menuitem id="menu_herbario_especimenes"
+              name="Especímenes"
+              parent="menu_herbario_root"
+              action="action_herbario_specimen"
+              sequence="10"/>
+
+    <!-- Ubicaciones -->
+    <record id="action_herbario_collection_site" model="ir.actions.act_window">
+        <field name="name">Ubicaciones</field>
+        <field name="res_model">herbario.collection.site</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="herbario_espoch.view_herbario_collection_site_tree"/>
+    </record>
+    
+    <menuitem id="menu_herbario_ubicaciones"
+              name="Ubicaciones"
+              parent="menu_herbario_root"
+              action="action_herbario_collection_site"
+              sequence="20"/>
+
+    <!-- Imágenes -->
+    <menuitem id="menu_herbario_imagenes"
+              name="Imágenes"
+              parent="menu_herbario_root"
+              action="action_herbario_image"
+              sequence="30"/>
+
+    <!-- Códigos QR -->
+    <menuitem id="menu_herbario_qr"
+              name="Códigos QR"
+              parent="menu_herbario_root"
+              action="action_herbario_qr_code"
+              sequence="40"/>
+
+    <!-- ==================== SUBMENÚ REPORTES ==================== -->
+    <menuitem id="menu_herbario_reportes"
+              name="Reportes"
+              parent="menu_herbario_root"
+              sequence="50"/>
+
+    <menuitem id="menu_herbario_estadisticas"
+              name="Estadísticas"
+              parent="menu_herbario_reportes"
+              sequence="10"/>
+
+    <menuitem id="menu_herbario_historial"
+              name="Historial de Cambios"
+              parent="menu_herbario_reportes"
+              action="action_herbario_audit_log"
+              sequence="20"/>
+
+    <!-- ==================== SUBMENÚ CONFIGURACIÓN ==================== -->
+    <menuitem id="menu_herbario_config"
+              name="Configuración"
+              parent="menu_herbario_root"
+              groups="herbario_espoch.group_herbario_encargado"
+              sequence="100"/>
+
+    <menuitem id="menu_herbario_usuarios"
+              name="Usuarios"
+              parent="menu_herbario_config"
+              action="base.action_res_users"
+              sequence="10"/>
+
+</odoo>

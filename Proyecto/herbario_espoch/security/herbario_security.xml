@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== CATEGORÍA ==================== -->
+    <record id="module_herbario_category" model="ir.module.category">
+        <field name="name">Herbario ESPOCH</field>
+        <field name="description">Gestión del Herbario Virtual</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- ==================== GRUPOS DE USUARIOS ==================== -->
+
+    <!-- Grupo: Usuario general (incluye estudiantes, investigadores, docentes) -->
+    <record id="group_herbario_usuario" model="res.groups">
+        <field name="name">Herbario / Usuario</field>
+        <field name="category_id" ref="module_herbario_category"/>
+        <field name="comment">Usuario general del herbario (estudiante/investigador/docente)</field>
+    </record>
+
+    <!-- Grupo: Encargado (CRUD completo + administración) -->
+    <record id="group_herbario_encargado" model="res.groups">
+        <field name="name">Herbario / Encargado del Herbario</field>
+        <field name="category_id" ref="module_herbario_category"/>
+        <field name="implied_ids" eval="[(4, ref('group_herbario_usuario'))]"/>
+        <field name="comment">Control total sobre el herbario, puede eliminar registros</field>
+    </record>
+
+    <!-- Grupo: Administrador TI (acceso total + configuración) -->
+    <record id="group_herbario_admin_ti" model="res.groups">
+        <field name="name">Herbario / Administrador TI</field>
+        <field name="category_id" ref="module_herbario_category"/>
+        <field name="implied_ids" eval="[(4, ref('group_herbario_encargado'))]"/>
+        <field name="comment">Acceso total incluyendo configuración del sistema</field>
+    </record>
+
+    <!-- ==================== REGLAS DE REGISTRO (Record Rules) ==================== -->
+
+    <!-- Regla: Usuarios - Ver especímenes públicos y propios; pueden crear/editar propios -->
+    <record id="herbario_specimen_usuario_rule" model="ir.rule">
+        <field name="name">Usuario: Ver públicos y propios; editar propios</field>
+        <field name="model_id" ref="model_herbario_specimen"/>
+        <field name="domain_force">['|', ('created_by', '=', user.id), ('es_publico', '=', True)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_usuario'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Regla: Encargado - Acceso total -->
+    <record id="herbario_specimen_encargado_rule" model="ir.rule">
+        <field name="name">Encargado: Acceso total</field>
+        <field name="model_id" ref="model_herbario_specimen"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_encargado'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Regla: Localidades - Hereda permisos del espécimen -->
+    <record id="herbario_locality_usuario_rule" model="ir.rule">
+        <field name="name">Usuario: Localidades de especímenes propios</field>
+        <field name="model_id" ref="model_herbario_locality"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_usuario'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="herbario_locality_encargado_rule" model="ir.rule">
+        <field name="name">Encargado: Todas las localidades</field>
+        <field name="model_id" ref="model_herbario_locality"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_encargado'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Regla: Imágenes - Hereda permisos del espécimen -->
+    <record id="herbario_image_usuario_rule" model="ir.rule">
+        <field name="name">Usuario: Imágenes de especímenes propios</field>
+        <field name="model_id" ref="model_herbario_image"/>
+        <field name="domain_force">['|', ('specimen_id.created_by', '=', user.id), ('specimen_id.es_publico', '=', True)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_usuario'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="herbario_image_encargado_rule" model="ir.rule">
+        <field name="name">Encargado: Todas las imágenes</field>
+        <field name="model_id" ref="model_herbario_image"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_encargado'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Regla: QR Codes - Usuarios pueden ver y generar QR para taxones -->
+    <record id="herbario_qr_usuario_rule" model="ir.rule">
+        <field name="name">Usuario: Ver y generar QR de taxones</field>
+        <field name="model_id" ref="model_herbario_qr_code"/>
+        <field name="domain_force">[('taxon_id', '!=', False)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_usuario'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="herbario_qr_encargado_rule" model="ir.rule">
+        <field name="name">Encargado: Generar y gestionar QR</field>
+        <field name="model_id" ref="model_herbario_qr_code"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_encargado'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Regla: Historial/Audit - Lectura para usuarios, escritura para encargados/admin -->
+    <record id="herbario_audit_all_rule" model="ir.rule">
+        <field name="name">Usuarios: Ver historial/auditoría</field>
+        <field name="model_id" ref="model_herbario_audit_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_herbario_usuario'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+</odoo>

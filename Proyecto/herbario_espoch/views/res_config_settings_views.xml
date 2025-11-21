@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 
+    COMENTADO: Este archivo intenta agregar campos de configuración de seguridad a res.config.settings,
+    pero los campos correspondientes (require_strong_password, require_institutional_email, 
+    session_timeout_minutes, max_login_attempts, password_expiry_days) no están definidos en el 
+    modelo ir.config.settings.
+    
+    Para implementar estas configuraciones, se requeriría:
+    1. Crear un modelo personalizado "herbario.config.settings" que extienda ir.config_settings
+    2. Definir los campos _get/set con las claves correspondientes en ir.config_parameters
+    3. Completar la vista con el modelo correcto
+    
+    Comentado por ahora - puede reactivarse cuando se complete la implementación.
+    -->
+    
+    <!-- Vista de Configuración de Seguridad - DESACTIVADA
+    <record id="res_config_settings_view_form_herbario" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.herbario</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@id='user_default_rights']" position="after">
+                <div class="col-12 col-lg-6 o_setting_box" id="herbario_security">
+                    <div class="o_setting_left_pane">
+                        <field name="require_strong_password"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="require_strong_password"/>
+                        <div class="text-muted">
+                            Validar que las contraseñas tengan mínimo 8 caracteres, mayúscula, número y símbolo
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-lg-6 o_setting_box" id="herbario_email">
+                    <div class="o_setting_left_pane">
+                        <field name="require_institutional_email"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="require_institutional_email"/>
+                        <div class="text-muted">
+                            Solo permitir correos del dominio @espoch.edu.ec
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-lg-6 o_setting_box">
+                    <div class="o_setting_right_pane">
+                        <label for="session_timeout_minutes" string="Timeout de Sesión"/>
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="session_timeout_minutes" class="col-lg-3 o_light_label"/>
+                                <field name="session_timeout_minutes" class="col-lg-2"/>
+                                <span class="col-lg-7">minutos de inactividad</span>
+                            </div>
+                        </div>
+                        <div class="text-muted">
+                            Cerrar sesión automáticamente tras período de inactividad
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-lg-6 o_setting_box">
+                    <div class="o_setting_right_pane">
+                        <label for="max_login_attempts" string="Intentos de Login"/>
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="max_login_attempts" class="col-lg-3 o_light_label"/>
+                                <field name="max_login_attempts" class="col-lg-2"/>
+                                <span class="col-lg-7">intentos antes de bloquear</span>
+                            </div>
+                        </div>
+                        <div class="text-muted">
+                            Bloquear cuenta temporalmente tras múltiples intentos fallidos
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-lg-6 o_setting_box">
+                    <div class="o_setting_right_pane">
+                        <label for="password_expiry_days" string="Expiración de Contraseña"/>
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="password_expiry_days" class="col-lg-3 o_light_label"/>
+                                <field name="password_expiry_days" class="col-lg-2"/>
+                                <span class="col-lg-7">días (0 = nunca expira)</span>
+                            </div>
+                        </div>
+                        <div class="text-muted">
+                            Forzar cambio de contraseña periódicamente
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+    -->
+</odoo>

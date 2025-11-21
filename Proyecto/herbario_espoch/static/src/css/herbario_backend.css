@@ -1,0 +1,158 @@
+/* ==================== HERBARIO ESPOCH - ESTILOS BACKEND ==================== */
+
+/* Variables específicas del backend */
+:root {
+    --herbario-bg-primary: #2d5f3f;
+    --herbario-bg-secondary: #5a8c6f;
+    --herbario-bg-light: #e8f5e9;
+}
+
+/* ==================== FORMULARIOS ==================== */
+.o_herbario_form .o_form_sheet {
+    max-width: 1400px;
+}
+
+.o_herbario_specimen_image {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.o_herbario_qr_image {
+    max-width: 200px;
+    max-height: 200px;
+    border: 2px solid #ddd;
+    padding: 10px;
+    background: white;
+}
+
+/* ==================== BADGES DE ESTADO ==================== */
+.o_herbario_status_badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.85em;
+}
+
+.o_herbario_status_borrador {
+    background: #ffc107;
+    color: #000;
+}
+
+.o_herbario_status_revision {
+    background: #17a2b8;
+    color: white;
+}
+
+.o_herbario_status_activo {
+    background: #28a745;
+    color: white;
+}
+
+.o_herbario_status_archivado {
+    background: #6c757d;
+    color: white;
+}
+
+/* ==================== VISTA DE ÁRBOL ==================== */
+.o_herbario_tree .o_list_table {
+    font-size: 0.95em;
+}
+
+.o_herbario_tree .o_data_cell {
+    padding: 8px;
+}
+
+.o_herbario_tree img {
+    max-width: 50px;
+    max-height: 50px;
+    border-radius: 4px;
+}
+
+/* ==================== VISTA KANBAN ==================== */
+.o_herbario_kanban_card {
+    min-height: 200px;
+}
+
+.o_herbario_kanban_image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px 4px 0 0;
+}
+
+.o_herbario_kanban_title {
+    font-weight: bold;
+    font-style: italic;
+    color: var(--herbario-bg-primary);
+    margin: 10px 0;
+}
+
+/* ==================== MAPAS ==================== */
+.o_herbario_map_widget {
+    height: 400px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* ==================== HISTORIAL ==================== */
+.o_herbario_history_timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.o_herbario_history_item {
+    position: relative;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: #f8f9fa;
+    border-left: 3px solid var(--herbario-bg-primary);
+    border-radius: 4px;
+}
+
+.o_herbario_history_item::before {
+    content: '';
+    position: absolute;
+    left: -9px;
+    top: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--herbario-bg-primary);
+    border: 2px solid white;
+}
+
+.o_herbario_history_user {
+    font-weight: bold;
+    color: var(--herbario-bg-primary);
+}
+
+.o_herbario_history_date {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+/* ==================== ESTADÍSTICAS ==================== */
+.o_herbario_stats_box {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin: 10px;
+}
+
+.o_herbario_stats_number {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: var(--herbario-bg-primary);
+}
+
+.o_herbario_stats_label {
+    font-size: 0.9em;
+    color: #6c757d;
+    text-transform: uppercase;
+}

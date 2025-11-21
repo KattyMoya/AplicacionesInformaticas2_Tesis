@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista Árbol -->
+    <record id="view_herbario_image_tree" model="ir.ui.view">
+        <field name="name">herbario.image.tree</field>
+        <field name="model">herbario.image</field>
+        <field name="arch" type="xml">
+            <tree string="Imágenes del Herbario">
+                <field name="thumbnail" widget="image" width="80"/>
+                <field name="specimen_id"/>
+                <field name="taxon_id"/>
+                <field name="specimen_codigo" string="Código Espécimen"/>
+                <field name="description"/>
+                <field name="file_size_human"/>
+                <field name="resolution"/>
+                <field name="is_primary" widget="boolean_toggle"/>
+                <button name="action_set_as_primary" type="object" string="Principal" icon="fa-star" invisible="is_primary"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista Formulario -->
+    <record id="view_herbario_image_form" model="ir.ui.view">
+        <field name="name">herbario.image.form</field>
+        <field name="model">herbario.image</field>
+        <field name="arch" type="xml">
+            <form string="Imagen de Espécimen">
+                <header>
+                    <button name="action_set_as_primary" string="Establecer como Principal" type="object" class="oe_highlight" icon="fa-star" invisible="is_primary"/>
+                </header>
+                <sheet>
+                    <field name="image_data" widget="image" class="oe_avatar" options="{'preview_image': 'image_data', 'size': [0, 600]}"/>
+                    
+                    <field name="taxon_id" invisible="1"/>
+
+                    <div class="oe_title">
+                        <label for="taxon_id" string="Taxón"/>
+                        <h1 class="font-italic text-success">
+                            <field name="taxon_id" readonly="1" options="{'no_open': True}"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Información General">
+                            <field name="filename_original"/>
+                            <field name="description" placeholder="Descripción de la imagen..."/>
+                            <field name="is_primary"/>
+                        </group>
+                        <group string="Metadatos Técnicos">
+                            <field name="file_size" invisible="1"/>
+                            <field name="file_size_human" readonly="1"/>
+                            <field name="mime_type" readonly="1"/>
+                            <field name="resolution" readonly="1"/>
+                            <field name="image_width" readonly="1"/>
+                            <field name="image_height" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Información de Captura">
+                            <field name="photographer"/>
+                            <field name="exif_camera" readonly="1"/>
+                            <field name="exif_date" readonly="1"/>
+                        </group>
+                        <group string="Descripción y Orden">
+                            <field name="display_order"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Metadatos EXIF" invisible="not exif_data">
+                            <field name="exif_data" widget="text"/>
+                        </page>
+                        <page string="Miniaturas Generadas">
+                            <group>
+                                <group string="Miniatura Pequeña">
+                                    <field name="thumbnail" widget="image" readonly="1"/>
+                                </group>
+                                <group string="Miniatura Mediana">
+                                    <field name="thumbnail_medium" widget="image" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Auditoría">
+                            <group>
+                                <group>
+                                    <field name="uploaded_by" readonly="1"/>
+                                    <field name="uploaded_at" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Kanban (Galería) - CORREGIDA -->
+    <record id="view_herbario_image_kanban" model="ir.ui.view">
+        <field name="name">herbario.image.kanban</field>
+        <field name="model">herbario.image</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="id"/>
+                <field name="filename_original"/>
+                <field name="specimen_id"/>
+                <field name="specimen_codigo"/>
+                <field name="image_data"/>
+                <field name="is_primary"/>
+                <field name="file_size_human"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <div class="o_kanban_image_wrapper">
+                                    <img t-att-src="kanban_image('herbario.image', 'thumbnail', record.id.raw_value)" alt="Imagen"/>
+                                </div>
+                            </div>
+                            <div class="o_kanban_details">
+                                <div class="o_kanban_details_wrapper">
+                                    <!-- Nombre científico (en cursiva y verde) -->
+                                    <div class="o_kanban_record_title" style="font-style: italic; color: #28a745; font-weight: bold; margin-bottom: 5px;">
+                                        <!--<field name="specimen_id"/>-->
+                                        <field name="specimen_nombre_cientifico"/>
+                                    </div>
+                                    
+                                    <!-- Código CHEP -->
+                                    <div class="o_kanban_record_subtitle" style="margin-bottom: 8px;">
+                                        <span class="badge badge-primary" style="font-size: 11px;">
+                                            <i class="fa fa-barcode"/> <field name="specimen_codigo"/>
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Información adicional -->
+                                    <div class="o_kanban_record_bottom">
+                                        <div class="oe_kanban_bottom_left">
+                                            <i class="fa fa-file-image-o"/> <field name="file_size_human"/>
+                                        </div>
+                                        <div class="oe_kanban_bottom_right">
+                                            <span t-if="record.is_primary.raw_value" class="badge badge-success">
+                                                <i class="fa fa-star"/> Principal
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vista de Búsqueda -->
+    <record id="view_herbario_image_search" model="ir.ui.view">
+        <field name="name">herbario.image.search</field>
+        <field name="model">herbario.image</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Imágenes">
+                <field name="filename_original"/>
+                <field name="specimen_id"/>
+                <field name="description"/>
+                <field name="photographer"/>
+                
+                <filter name="filter_primary" string="Imágenes Principales" domain="[('is_primary', '=', True)]"/>
+                <filter name="filter_recent" string="Recientes" domain="[('uploaded_at', '>=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_active" string="Activas" domain="[('deleted_at', '=', False)]"/>
+
+                <separator/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_specimen" string="Espécimen" context="{'group_by': 'specimen_id'}"/>
+                    <filter name="group_photographer" string="Fotógrafo" context="{'group_by': 'photographer'}"/>
+                    <filter name="group_date" string="Fecha de Subida" context="{'group_by': 'uploaded_at'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_herbario_image" model="ir.actions.act_window">
+        <field name="name">Galería de Imágenes</field>
+        <field name="res_model">herbario.image</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="domain">[('deleted_at', '=', False)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Subir la primera imagen del herbario
+            </p>
+            <p>
+                Gestione las imágenes de los especímenes con información detallada y miniaturas automáticas.
+            </p>
+        </field>
+    </record>
+</odoo>
