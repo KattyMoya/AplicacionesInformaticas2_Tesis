@@ -155,25 +155,28 @@
             <t t-set="head" t-value="False"/>
             
             <div id="wrap" class="oe_structure">
-                <section class="pt32 pb32 bg-light">
+                <section class="herbario-page-header">
                     <div class="container">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h1 class="mb-0">Estadísticas y Georreferencia</h1>
+                            <h1 class="mb-0 herbario-title">Estadísticas y Georreferencia</h1>
                         </div>
                     </div>
                 </section>
 
-                <section class="py-5" id="herbario_statistics_section">
-                    <div class="container-fluid">
+                <section class="py-5 herbario-section" id="herbario_statistics_section">
+                    <div class="container-fluid px-4">
                         <div class="row">
                             <!-- Barra lateral de filtros (izquierda) -->
                             <div class="col-lg-3" id="stats_filters_sidebar">
-                                <div class="card shadow-sm sticky-top" style="top: 20px;">
-                                    <div class="card-header bg-dark text-white">
-                                        <i class="fa fa-filter"/> Filtros
+                                <div class="herbario-card sticky-top" style="top: 20px;">
+                                    <div class="herbario-card-header">
+                                        <span><i class="fa fa-sliders mr-2"/> Filtros</span>
                                     </div>
-                                    <div id="stats_filters_content" class="card-body">
-                                        <div class="text-center">Cargando filtros...</div>
+                                    <div id="stats_filters_content" class="herbario-card-body">
+                                        <div class="text-center text-muted py-4">
+                                            <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                                            <div class="mt-2 small">Cargando filtros...</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -181,31 +184,33 @@
                             <!-- Contenido principal (centro) -->
                             <div class="col-lg-9" id="stats_main_content">
                                 <!-- Contenedor para el gráfico -->
-                                <div id="stats_chart_container" class="card mb-4 shadow-sm">
-                                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="position: relative; overflow: visible;">
-                                        <span id="chart_title">Especímenes por Familia</span>
+                                <div id="stats_chart_container" class="herbario-card">
+                                    <div class="herbario-card-header" style="position: relative; overflow: visible;">
+                                        <span id="chart_title" style="font-size: 1.2rem;">Especímenes por Familia</span>
                                         <div style="position: relative;">
-                                            <button class="btn btn-sm btn-light" type="button" id="dropdownGroupButton">
-                                                Agrupar por <i class="fa fa-caret-down ml-1"></i>
+                                            <button class="btn btn-sm btn-herbario-outline" type="button" id="dropdownGroupButton">
+                                                Agrupar por <i class="fa fa-chevron-down ml-1" style="font-size: 0.8em;"></i>
                                             </button>
-                                            <div id="chart_group_selector" style="display: none; position: absolute; right: 0; top: 100%; z-index: 9999; min-width: 160px; background-color: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); margin-top: 5px;">
-                                                <a class="dropdown-item-chart-group chart-group-item active" href="#" data-group="family">Familia</a>
-                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="genus">Género</a>
-                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="species">Especie</a>
-                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="province">Provincia</a>
-                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="collector">Colector</a>
+                                            <div id="chart_group_selector" style="display: none; position: absolute; right: 0; top: 100%; z-index: 9999; min-width: 180px; background-color: white; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-top: 8px; padding: 8px 0;">
+                                                <a class="dropdown-item-chart-group chart-group-item active" href="#" data-group="family" style="padding: 8px 16px; display: block; color: #333; text-decoration: none;">Familia</a>
+                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="genus" style="padding: 8px 16px; display: block; color: #333; text-decoration: none;">Género</a>
+                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="species" style="padding: 8px 16px; display: block; color: #333; text-decoration: none;">Especie</a>
+                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="province" style="padding: 8px 16px; display: block; color: #333; text-decoration: none;">Provincia</a>
+                                                <a class="dropdown-item-chart-group chart-group-item" href="#" data-group="collector" style="padding: 8px 16px; display: block; color: #333; text-decoration: none;">Colector</a>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="card-body" style="min-height: 400px;">
+                                    <div class="herbario-card-body" style="min-height: 400px;">
                                         <canvas id="familyChart"></canvas>
                                     </div>
                                 </div>
 
                                 <!-- Contenedor para el mapa -->
-                                <div id="stats_map_container" class="card shadow-sm">
-                                    <div class="card-header bg-success text-white">Mapa de Distribución</div>
-                                    <div id="leaflet_map" style="height: 600px;"></div>
+                                <div id="stats_map_container" class="herbario-card">
+                                    <div class="herbario-card-header">
+                                        <span><i class="fa fa-map-o mr-2"/> Mapa de Distribución</span>
+                                    </div>
+                                    <div id="leaflet_map" style="height: 600px; width: 100%;"></div>
                                 </div>
                             </div>
 

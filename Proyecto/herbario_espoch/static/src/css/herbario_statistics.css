@@ -1,0 +1,84 @@
+:root {
+    --herbario-primary: #0F5132;
+    --herbario-bg: #f8f9fa;
+    --herbario-border: #e9ecef;
+}
+.herbario-page-header {
+    background: white;
+    padding: 3rem 0;
+    border-bottom: 1px solid var(--herbario-border);
+}
+.herbario-title {
+    color: var(--herbario-primary);
+    font-weight: 300;
+    letter-spacing: -0.5px;
+}
+.herbario-section {
+    background-color: var(--herbario-bg);
+    min-height: 100vh;
+}
+.herbario-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.03);
+    background: white;
+    margin-bottom: 24px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.herbario-card:hover {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.06);
+}
+.herbario-card-header {
+    background: white;
+    border-bottom: 1px solid var(--herbario-border);
+    padding: 20px 24px;
+    font-weight: 600;
+    color: var(--herbario-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 12px 12px 0 0;
+}
+.herbario-card-body {
+    padding: 24px;
+}
+/* Overrides for Select2 to match theme */
+.select2-container--default .select2-selection--multiple {
+    border-color: var(--herbario-border) !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+}
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: var(--herbario-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(15, 81, 50, 0.15) !important;
+}
+/* Estilo para las etiquetas seleccionadas (pills) */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #e8f5e9 !important;
+    border: 1px solid #c8e6c9 !important;
+    color: #0F5132 !important;
+    border-radius: 4px !important;
+    padding: 2px 6px !important;
+    margin-top: 4px !important;
+    font-size: 0.85rem;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #0F5132 !important;
+    margin-right: 5px !important;
+    border-right: 1px solid #c8e6c9 !important;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    background-color: #c8e6c9 !important;
+    color: #0b3d26 !important;
+}
+/* Custom buttons */
+.btn-herbario-outline {
+    background-color: white;
+    color: var(--herbario-primary);
+    border: 1px solid var(--herbario-border);
+    border-radius: 8px;
+}
+.btn-herbario-outline:hover {
+    background-color: #f8f9fa;
+    border-color: var(--herbario-primary);
+}

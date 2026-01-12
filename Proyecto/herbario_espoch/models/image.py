@@ -181,6 +181,13 @@ class HerbarioImage(models.Model):
         store=False,
         help='Referencia técnica del espécimen (herbario.specimen,ID)'
     )
+
+    specimen_count = fields.Integer(
+        string='Especímenes que la usan',
+        related='taxon_id.total_specimens',
+        readonly=True,
+        help='Cantidad de especímenes asociados al taxón de esta imagen.'
+    )
     
     # Validación para asegurar que la imagen esté relacionada con al menos un registro
     @api.constrains('taxon_id', 'specimen_id')

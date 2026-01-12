@@ -1,5 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ==================== VISTA DE ÁRBOL PARA FAMILIAS ==================== -->
+    <record id="view_herbario_family_tree" model="ir.ui.view">
+        <field name="name">herbario.family.tree</field>
+        <field name="model">herbario.family</field>
+        <field name="arch" type="xml">
+            <tree string="Familias" decoration-muted="not active">
+                <field name="name"/>
+                <field name="total_taxons" string="# Taxones"/>
+                <field name="active" widget="boolean_toggle"/>
+                <!-- Botón de eliminar: Llama a la función segura -->
+                <button name="action_safe_delete" type="object" icon="fa-trash" 
+                        class="text-danger" title="Eliminar Familia"
+                        confirm="¿Está seguro de que desea eliminar esta familia permanentemente?"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ==================== VISTA DE ÁRBOL PARA TAXONES (CON BOTÓN ELIMINAR) ==================== -->
+    <record id="view_herbario_taxon_tree" model="ir.ui.view">
+        <field name="name">herbario.taxon.tree</field>
+        <field name="model">herbario.taxon</field>
+        <field name="arch" type="xml">
+            <tree string="Taxones" decoration-muted="not active">
+                <field name="name"/>
+                <field name="family_id"/>
+                <field name="genero"/>
+                <field name="especie"/>
+                <field name="total_specimens" string="# Especímenes"/>
+                <field name="active" widget="boolean_toggle"/>
+                <!-- Botón de eliminar: Llama a la función segura -->
+                <button name="action_safe_delete" type="object" icon="fa-trash" 
+                        class="text-danger" title="Eliminar Taxón"
+                        confirm="¿Está seguro de que desea eliminar este taxón permanentemente?"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ==================== VISTA DE ÁRBOL PARA AUTORES ==================== -->
+    <record id="view_herbario_author_tree" model="ir.ui.view">
+        <field name="name">herbario.author.tree</field>
+        <field name="model">herbario.author</field>
+        <field name="arch" type="xml">
+            <tree string="Autores">
+                <field name="name"/>
+                <button name="action_safe_delete" type="object" icon="fa-trash" 
+                        class="text-danger" title="Eliminar Autor"
+                        confirm="¿Está seguro de que desea eliminar este autor permanentemente?"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ==================== VISTA DE ÁRBOL PARA DETERMINADORES ==================== -->
+    <record id="view_herbario_determiner_tree" model="ir.ui.view">
+        <field name="name">herbario.determiner.tree</field>
+        <field name="model">herbario.determiner</field>
+        <field name="arch" type="xml">
+            <tree string="Determinadores">
+                <field name="name"/>
+                <button name="action_safe_delete" type="object" icon="fa-trash" 
+                        class="text-danger" title="Eliminar Determinador"
+                        confirm="¿Está seguro de que desea eliminar este determinador permanentemente?"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ==================== VISTA DE ÁRBOL PARA COLECTORES ==================== -->
+    <record id="view_herbario_collector_tree" model="ir.ui.view">
+        <field name="name">herbario.collector.tree</field>
+        <field name="model">herbario.collector</field>
+        <field name="arch" type="xml">
+            <tree string="Colectores">
+                <field name="name"/>
+                <button name="action_safe_delete" type="object" icon="fa-trash" 
+                        class="text-danger" title="Eliminar Colector"
+                        confirm="¿Está seguro de que desea eliminar este colector permanentemente?"/>
+            </tree>
+        </field>
+    </record>
+
     <!-- ==================== VISTA DE ÁRBOL PARA SITIOS DE COLECCIÓN (PRINCIPAL) ==================== -->
     <record id="view_herbario_collection_site_tree" model="ir.ui.view">
         <field name="name">herbario.collection.site.tree</field>

@@ -89,8 +89,8 @@
                 
                 <separator/>
                 <filter name="filter_today" string="Hoy" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
-                <filter name="filter_this_week" string="Esta Semana" domain="[('timestamp', '&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
-                <filter name="filter_this_month" string="Este Mes" domain="[('timestamp', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
+                <!-- Se elimina 'Esta Semana' por incompatibilidad con JS y se corrige 'Este Mes' usando strftime directo -->
+                <filter name="filter_this_month" string="Este Mes" domain="[('timestamp', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
                 
                 <separator/>
                 <filter name="filter_my_actions" string="Mis Acciones" domain="[('user_id', '=', uid)]"/>

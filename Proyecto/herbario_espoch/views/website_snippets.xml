@@ -5,6 +5,12 @@
         <t t-name="herbario_espoch.s_herbario_repository_block">
             <section class="s_herbario_repository py-5" data-name="Listado de Especímenes">
                 <div class="container-fluid">
+                    <!-- Fila para los botones de vista (alineados con la columna de resultados) -->
+                    <div class="row mb-3">
+                        <div class="col-lg-9 offset-lg-3 d-flex justify-content-end">
+                            <div class="herbario_view_switch"></div>
+                        </div>
+                    </div>
                     <div class="row">
                         <!-- Columna de Filtros (Barra Lateral Izquierda) -->
                         <div class="col-lg-3">
@@ -16,7 +22,6 @@
 
                         <!-- Columna de Resultados (Contenido Principal) -->
                         <div class="col-lg-9">
-                            <div class="herbario_view_switch d-flex justify-content-end mb-3"></div>
                             <div class="herbario_results row">
                                 <!-- Contenido de Placeholder para evitar errores en el editor de Odoo -->
                                 <div class="col-12"><div class="alert alert-info text-center">Cargando especímenes...</div></div>

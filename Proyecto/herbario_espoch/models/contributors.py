@@ -1,5 +1,5 @@
 from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 class HerbarioAuthor(models.Model):
     _name = 'herbario.author'
@@ -30,6 +30,20 @@ class HerbarioAuthor(models.Model):
     def name_get(self):
         return [(record.id, record.name) for record in self]
 
+    def unlink(self):
+        for record in self:
+            if record.specimen_ids:
+                raise UserError(
+                    f"No se puede eliminar el autor '{record.name}' porque está asociado a {len(record.specimen_ids)} especímenes.\n"
+                    "Solo se pueden eliminar autores que no tengan registros asociados."
+                )
+        return super(HerbarioAuthor, self).unlink()
+
+    def action_safe_delete(self):
+        self.ensure_one()
+        self.unlink()
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+
 class HerbarioDeterminer(models.Model):
     _name = 'herbario.determiner'
     _description = 'Determinadores Botánicos'
@@ -59,6 +73,20 @@ class HerbarioDeterminer(models.Model):
     def name_get(self):
         return [(record.id, record.name) for record in self]
 
+    def unlink(self):
+        for record in self:
+            if record.specimen_ids:
+                raise UserError(
+                    f"No se puede eliminar el determinador '{record.name}' porque está asociado a {len(record.specimen_ids)} especímenes.\n"
+                    "Solo se pueden eliminar determinadores que no tengan registros asociados."
+                )
+        return super(HerbarioDeterminer, self).unlink()
+
+    def action_safe_delete(self):
+        self.ensure_one()
+        self.unlink()
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+
 class HerbarioCollector(models.Model):
     _name = 'herbario.collector'
     _description = 'Colectores Botánicos'
@@ -87,3 +115,17 @@ class HerbarioCollector(models.Model):
 
     def name_get(self):
         return [(record.id, record.name) for record in self]
+
+    def unlink(self):
+        for record in self:
+            if record.specimen_ids:
+                raise UserError(
+                    f"No se puede eliminar el colector '{record.name}' porque está asociado a {len(record.specimen_ids)} especímenes.\n"
+                    "Solo se pueden eliminar colectores que no tengan registros asociados."
+                )
+        return super(HerbarioCollector, self).unlink()
+
+    def action_safe_delete(self):
+        self.ensure_one()
+        self.unlink()
+        return {'type': 'ir.actions.client', 'tag': 'reload'}

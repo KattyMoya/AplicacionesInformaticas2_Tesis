@@ -89,9 +89,9 @@ class HerbarioController(http.Controller):
                 'image': image_url,
             })
         
-        # CORRECCIÓN: Devolver siempre las opciones de filtro para mantener la consistencia del frontend.
-        # Odoo es eficiente cacheando estas búsquedas, por lo que el impacto en el rendimiento es mínimo.
-        all_specimens_for_filters = Specimen.search([('es_publico', '=', True), ('status', '=', 'activo')])
+        # LÓGICA DE TAMIZADO: Usar el dominio actual para filtrar las opciones disponibles
+        # Esto asegura que los filtros se actualicen en cascada según la selección actual.
+        all_specimens_for_filters = Specimen.search(domain)
         all_sites_for_filters = request.env['herbario.collection.site'].sudo().search([('specimen_id', 'in', all_specimens_for_filters.ids)])
 
         filter_options = {
@@ -190,7 +190,7 @@ class HerbarioController(http.Controller):
         if filters.get('genus'):
             domain.append(('taxon_id.genero', '=', filters['genus']))
         if filters.get('species'):
-            domain.append(('taxon_id.especie', 'ilike', filters['species']))
+            domain.append(('taxon_id.especie', '=', filters['species']))
         if filters.get('author'):
             domain.append(('author_ids.name', '=', filters['author']))
         if filters.get('determiner'):
@@ -200,7 +200,7 @@ class HerbarioController(http.Controller):
         if filters.get('herbarium'):
             domain.append(('herbarium_ids.name', '=', filters['herbarium']))
         if filters.get('index'):
-            domain.append(('index_text', 'ilike', filters['index']))
+            domain.append(('index_text', '=', filters['index']))
 
         # Filtros de ubicación
         site_domain = []
@@ -260,12 +260,14 @@ class HerbarioController(http.Controller):
         return {
             'families': sorted(list(set(all_specimens.mapped('taxon_id.family_id.name')) - {False})),
             'genera': sorted(list(set(all_specimens.mapped('taxon_id.genero')) - {False})),
+            'species': sorted(list(set(all_specimens.mapped('taxon_id.especie')) - {False})),
             'authors': sorted(list(set(all_specimens.mapped('author_ids.name')) - {False})),
             'determiners': sorted(list(set(all_specimens.mapped('determiner_ids.name')) - {False})),
             'collectors': sorted(list(set(all_specimens.mapped('collector_ids.name')) - {False})),
             'countries': sorted(list(set(all_sites.mapped('country_id.name')) - {False})),
             'provinces': sorted(list(set(all_sites.mapped('province_id.name')) - {False})),
             'herbaria': sorted(list(set(all_specimens.mapped('herbarium_ids.name')) - {False})),
+            'indices': sorted(list(set(all_specimens.mapped('index_text')) - {False})),
         }
 
     @http.route('/herbario/api/specimen_details_html/<int:specimen_id>', type='http', auth='public', website=True)

@@ -116,8 +116,8 @@ publicWidget.registry.HerbarioStatistics = publicWidget.Widget.extend({
             ).join('');
             
             return `
-                <div class="form-group mb-3">
-                    <label for="${id}" class="form-label">${label}</label>
+                <div class="form-group mb-2">
+                    <label for="${id}" class="form-label small fw-bold text-muted mb-1">${label}</label>
                     <select id="${id}" class="form-control stats-filter-select" multiple="multiple">
                         <option value=""></option>
                         ${optionsHtml}
@@ -128,26 +128,20 @@ publicWidget.registry.HerbarioStatistics = publicWidget.Widget.extend({
         const filtersHtml = `
             ${createSelect('filter_family', 'Familia', options.families)}
             ${createSelect('filter_genus', 'Género', options.genera)}
-            <div class="form-group mb-3">
-                <label for="filter_species" class="form-label">Especie</label>
-                <input type="text" id="filter_species" class="form-control" placeholder="Escriba..."/>
-            </div>
+            ${createSelect('filter_species', 'Especie', options.species)}
             ${createSelect('filter_author', 'Autor', options.authors)}
             ${createSelect('filter_determiner', 'Determinador', options.determiners)}
             ${createSelect('filter_collector', 'Colector', options.collectors)}
             ${createSelect('filter_country', 'País', options.countries)}
             ${createSelect('filter_province', 'Provincia', options.provinces)}
             ${createSelect('filter_herbarium', 'Herbario', options.herbaria)}
-            <div class="form-group mb-3">
-                <label for="filter_index" class="form-label">Index</label>
-                <input type="text" id="filter_index" class="form-control" placeholder="Escriba..."/>
-            </div>
+            ${createSelect('filter_index', 'Index', options.indices)}
             <div class="row mt-3 g-2">
                 <div class="col-6">
-                    <button id="stats_clear_filters" class="btn btn-secondary w-100">Limpiar</button>
+                    <button type="button" id="stats_clear_filters" class="btn btn-secondary w-100"><i class="fa fa-eraser"></i> Limpiar</button>
                 </div>
                 <div class="col-6">
-                    <button id="stats_apply_filters" class="btn btn-primary w-100">Aplicar</button>
+                    <button type="button" id="stats_apply_filters" class="btn btn-primary w-100" style="background-color: #0F5132; border-color: #0F5132;"><i class="fa fa-check"></i> Aplicar</button>
                 </div>
             </div>
         `;
@@ -251,8 +245,8 @@ publicWidget.registry.HerbarioStatistics = publicWidget.Widget.extend({
                 datasets: [{ 
                     label: 'Nº de Especímenes', 
                     data: chartData.values.slice(0, 20),
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(15, 81, 50, 0.7)',
+                    borderColor: 'rgba(15, 81, 50, 1)',
                     borderWidth: 1
                 }]
             },
@@ -337,14 +331,14 @@ publicWidget.registry.HerbarioStatistics = publicWidget.Widget.extend({
         this.currentFilters = {
             family: this.$('#filter_family').val(),
             genus: this.$('#filter_genus').val(),
-            species: this.$('#filter_species').val() || null,
+            species: this.$('#filter_species').val(),
             author: this.$('#filter_author').val(),
             determiner: this.$('#filter_determiner').val(),
             collector: this.$('#filter_collector').val(),
             country: this.$('#filter_country').val(),
             province: this.$('#filter_province').val(),
             herbarium: this.$('#filter_herbarium').val(),
-            index: this.$('#filter_index').val() || null,
+            index: this.$('#filter_index').val(),
         };
         this._fetchData();
     },
@@ -355,7 +349,6 @@ publicWidget.registry.HerbarioStatistics = publicWidget.Widget.extend({
         
         // Limpiar controles de filtro
         this.$('.stats-filter-select').val(null).trigger('change');
-        this.$('input.form-control').val('');
         
         this._fetchData();
     },

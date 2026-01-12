@@ -1,5 +1,5 @@
-from odoo import models, fields, api  # Agrega 'api' aquí
-from odoo.exceptions import ValidationError
+from odoo import models, fields, api
+from odoo.exceptions import ValidationError, UserError
 
 class HerbarioFamily(models.Model):
     _name = 'herbario.family'
@@ -13,6 +13,7 @@ class HerbarioFamily(models.Model):
         index=True,
         tracking=True
     )
+    active = fields.Boolean(string='Activo', default=True, help="Permite ocultar la familia sin eliminarla.")
     description = fields.Text(
         string='Descripción',
         tracking=True
@@ -40,6 +41,22 @@ class HerbarioFamily(models.Model):
     def name_get(self):
         return [(record.id, record.name) for record in self]
 
+    def unlink(self):
+        """Sobrescribe el borrado para evitar eliminar familias en uso."""
+        for record in self:
+            if record.taxon_ids:
+                raise UserError(
+                    f"No se puede eliminar la familia '{record.name}' porque contiene {len(record.taxon_ids)} taxones asociados.\n"
+                    "Solo se pueden eliminar familias que no tengan taxones registrados."
+                )
+        return super(HerbarioFamily, self).unlink()
+
+    def action_safe_delete(self):
+        """Acción para el botón de eliminar en la vista de lista."""
+        self.ensure_one()
+        self.unlink()
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
+
 class HerbarioTaxon(models.Model):
     _name = 'herbario.taxon'
     _description = 'Taxón del Herbario'
@@ -53,6 +70,7 @@ class HerbarioTaxon(models.Model):
         store=True,
         index=True
     )
+    active = fields.Boolean(string='Activo', default=True, help="Permite ocultar el taxón sin eliminarlo.")
     genero = fields.Char(
         string='Género',
         index=True,
@@ -170,6 +188,22 @@ class HerbarioTaxon(models.Model):
             'type': 'ir.actions.act_window',
             'context': {'default_taxon_id': self.id},
         }
+
+    def unlink(self):
+        """Sobrescribe el borrado para evitar eliminar taxones en uso."""
+        for record in self:
+            if record.specimen_ids:
+                raise UserError(
+                    f"No se puede eliminar el taxón '{record.name}' porque está siendo utilizado en {len(record.specimen_ids)} especímenes.\n"
+                    "Solo se pueden eliminar taxones que no tengan registros asociados."
+                )
+        return super(HerbarioTaxon, self).unlink()
+
+    def action_safe_delete(self):
+        """Acción para el botón de eliminar en la vista de lista."""
+        self.ensure_one()
+        self.unlink()
+        return {'type': 'ir.actions.client', 'tag': 'reload'}
 
     def action_view_images(self):
         self.ensure_one()

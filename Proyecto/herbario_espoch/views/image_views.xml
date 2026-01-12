@@ -45,6 +45,8 @@
                             <field name="filename_original"/>
                             <field name="description" placeholder="Descripción de la imagen..."/>
                             <field name="is_primary"/>
+                            <field name="taxon_id" readonly="1" options="{'no_open': True}"/>
+                            <field name="specimen_count" string="# Especímenes Asociados"/>
                         </group>
                         <group string="Metadatos Técnicos">
                             <field name="file_size" invisible="1"/>

@@ -12,6 +12,7 @@ publicWidget.registry.HerbarioRepository = publicWidget.Widget.extend({
         'click .herbario-page-link': '_onPageClick',
         'click .btn_view_cards': '_onViewChange',
         'click .btn_view_table': '_onViewChange',
+        'change .herbario_filters_sidebar select': '_onApplyFilters', // Actualizar al cambiar selección
     },
 
     /**0
@@ -98,31 +99,34 @@ publicWidget.registry.HerbarioRepository = publicWidget.Widget.extend({
     _renderFilters: function (filterOptions) {
         if (!this.el) return;
 
-        const createSelect = (id, placeholder, options) => {
+        const $sidebarContainer = this.$('.herbario_filters_sidebar');
+        let $form = this.$('#herbario-filters-form');
+
+        // Helper para generar opciones HTML
+        const getOptionsHtml = (placeholder, options) => {
             let opts = `<option value="">${placeholder}</option>`;
             (options || []).forEach(o => { opts += `<option value="${o}">${o}</option>`; });
-            return `<select id="${id}" class="form-control form-control-sm">${opts}</select>`;
+            return opts;
         };
 
-        const $sidebarContainer = this.$('.herbario_filters_sidebar');
-        $sidebarContainer.empty();
-
-        const $card = $(`
+        // Si el formulario no existe, lo creamos (primera carga)
+        if ($form.length === 0) {
+            const $card = $(`
             <div class="card shadow-sm">
                 <div class="card-header bg-dark text-white"><i class="fa fa-filter"></i> Filtros de Búsqueda</div>
                 <div class="card-body">
                     <form id="herbario-filters-form">
                         <div class="form-group"><label>Taxón</label><input type="text" id="filter_taxon" class="form-control form-control-sm" placeholder="Nombre científico..."></div>
-                        <div class="form-group"><label>Familia</label>${createSelect('filter_family', 'Todas', filterOptions.families)}</div>
-                        <div class="form-group"><label>Género</label>${createSelect('filter_genus', 'Todos', filterOptions.genera)}</div>
+                        <div class="form-group"><label>Familia</label><select id="filter_family" class="form-control form-control-sm"></select></div>
+                        <div class="form-group"><label>Género</label><select id="filter_genus" class="form-control form-control-sm"></select></div>
                         <div class="form-group"><label>Especie</label><input type="text" id="filter_species" class="form-control form-control-sm" placeholder="Nombre especie..."></div>
                         <div class="form-group"><label>Index</label><input type="text" id="filter_index" class="form-control form-control-sm" placeholder="Código index..."></div>
-                        <div class="form-group"><label>Herbario</label>${createSelect('filter_herbarium', 'Todos', filterOptions.herbaria)}</div>
-                        <div class="form-group"><label>Autor</label>${createSelect('filter_author', 'Todos', filterOptions.authors)}</div>
-                        <div class="form-group"><label>Determinador</label>${createSelect('filter_determiner', 'Todos', filterOptions.determiners)}</div>
-                        <div class="form-group"><label>Colector</label>${createSelect('filter_collector', 'Todos', filterOptions.collectors)}</div>
-                        <div class="form-group"><label>País</label>${createSelect('filter_country', 'Todos', filterOptions.countries)}</div>
-                        <div class="form-group"><label>Provincia</label>${createSelect('filter_province', 'Todos', filterOptions.provinces)}</div>
+                        <div class="form-group"><label>Herbario</label><select id="filter_herbarium" class="form-control form-control-sm"></select></div>
+                        <div class="form-group"><label>Autor</label><select id="filter_author" class="form-control form-control-sm"></select></div>
+                        <div class="form-group"><label>Determinador</label><select id="filter_determiner" class="form-control form-control-sm"></select></div>
+                        <div class="form-group"><label>Colector</label><select id="filter_collector" class="form-control form-control-sm"></select></div>
+                        <div class="form-group"><label>País</label><select id="filter_country" class="form-control form-control-sm"></select></div>
+                        <div class="form-group"><label>Provincia</label><select id="filter_province" class="form-control form-control-sm"></select></div>
                         <div class="form-group">
                             <label>Elevación (m.s.n.m)</label>
                             <div class="input-group input-group-sm">
@@ -141,16 +145,44 @@ publicWidget.registry.HerbarioRepository = publicWidget.Widget.extend({
                     </form>
                 </div>
             </div>`);
-
-        $sidebarContainer.append($card);
-
-        // Restaurar valores de filtros actuales
-        for (const key in this.currentFilters) {
-            const el = this.el.querySelector(`#filter_${key}`);
-            if (el) {
-                el.value = this.currentFilters[key];
-            }
+            $sidebarContainer.empty().append($card);
         }
+
+        // Función para actualizar un select preservando el valor si es posible
+        const updateSelect = (id, key, placeholder, options) => {
+            const $el = this.$(`#${id}`);
+            // Usamos el valor de currentFilters si existe, sino el valor actual del DOM
+            const currentVal = this.currentFilters[key] !== undefined ? this.currentFilters[key] : $el.val();
+            
+            $el.html(getOptionsHtml(placeholder, options));
+            
+            if (currentVal) {
+                $el.val(currentVal);
+            }
+        };
+
+        updateSelect('filter_family', 'family', 'Todas', filterOptions.families);
+        updateSelect('filter_genus', 'genus', 'Todos', filterOptions.genera);
+        updateSelect('filter_herbarium', 'herbarium_id', 'Todos', filterOptions.herbaria);
+        updateSelect('filter_author', 'author', 'Todos', filterOptions.authors);
+        updateSelect('filter_determiner', 'determiner', 'Todos', filterOptions.determiners);
+        updateSelect('filter_collector', 'collector', 'Todos', filterOptions.collectors);
+        updateSelect('filter_country', 'country', 'Todos', filterOptions.countries);
+        updateSelect('filter_province', 'province', 'Todos', filterOptions.provinces);
+
+        // Restaurar inputs de texto si es necesario
+        const restoreInput = (id, key) => {
+             const $el = this.$(`#${id}`);
+             if (this.currentFilters[key] !== undefined && $el.val() !== this.currentFilters[key]) {
+                 $el.val(this.currentFilters[key]);
+             }
+        };
+        
+        restoreInput('filter_taxon', 'taxon');
+        restoreInput('filter_species', 'species');
+        restoreInput('filter_index', 'index');
+        restoreInput('filter_elevation_val', 'elevation_val');
+        restoreInput('filter_elevation_op', 'elevation_op');
     },
 
     /**
@@ -369,6 +401,8 @@ publicWidget.registry.HerbarioRepository = publicWidget.Widget.extend({
 
     _onClearFilters: function () {
         this.currentFilters = {};
+        const form = this.el.querySelector('#herbario-filters-form');
+        if (form) form.reset();
         this.currentPage = 1;
         this._fetchData();
     },
