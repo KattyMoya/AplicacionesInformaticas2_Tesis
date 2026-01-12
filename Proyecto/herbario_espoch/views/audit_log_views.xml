@@ -106,7 +106,7 @@
     </record>
 
     <!-- Vista Timeline (opcional) -->
-    <record id="view_herbario_audit_log_timeline" model="ir.ui.view">
+    <!--<record id="view_herbario_audit_log_timeline" model="ir.ui.view">
         <field name="name">herbario.audit.log.timeline</field>
         <field name="model">herbario.audit.log</field>
         <field name="arch" type="xml">
@@ -119,7 +119,7 @@
                 <field name="description"/>
             </timeline>
         </field>
-    </record>
+    </record>-->
 
     <!-- Acción -->
     <record id="action_herbario_audit_log" model="ir.actions.act_window">

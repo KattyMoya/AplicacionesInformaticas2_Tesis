@@ -1,0 +1,41 @@
+.herbario-offcanvas-panel {
+    position: fixed;
+    top: 0;
+    right: -450px; /* Inicia fuera de la pantalla */
+    width: 400px;
+    height: 100%;
+    background-color: #ffffff;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    z-index: 1050; /* Por encima del contenido, debajo del overlay si es necesario */
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
+}
+
+.herbario-offcanvas-panel.active {
+    right: 0; /* Se desliza a la vista */
+}
+
+.herbario-offcanvas-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s;
+}
+
+.herbario-offcanvas-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+@media (max-width: 450px) {
+    .herbario-offcanvas-panel {
+        width: 100%;
+        right: -100%;
+    }
+}

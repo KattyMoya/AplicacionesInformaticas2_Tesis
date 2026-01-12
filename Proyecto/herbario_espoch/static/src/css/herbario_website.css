@@ -1,0 +1,13 @@
+.chart-group-item {
+    display: block;
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none;
+}
+
+.chart-group-item.active,
+.chart-group-item:hover {
+    color: white !important;
+    background-color: #007bff;
+    text-decoration: none;
+}

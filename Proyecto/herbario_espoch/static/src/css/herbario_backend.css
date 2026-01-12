@@ -73,7 +73,7 @@
 
 /* ==================== VISTA KANBAN ==================== */
 .o_herbario_kanban_card {
-    min-height: 200px;
+    min-height: 120px;
 }
 
 .o_herbario_kanban_image {

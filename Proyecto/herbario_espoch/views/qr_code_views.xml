@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <tree string="Códigos QR">
                 <field name="qr_image" widget="image" width="100"/>
-                <field name="taxon_name"/>
+                <field name="specimen_id"/>
                 <field name="qr_url" widget="url"/>
                 <field name="resolution"/>
                 <field name="version"/>
@@ -40,17 +40,15 @@
 
                     <field name="qr_image" widget="image" class="oe_avatar" options="{'preview_image': 'qr_image', 'size': [0, 400]}"/>
 
-                    <!--<div class="oe_title">
-                        <label for="specimen_id"/>
-                        <h1><field name="specimen_id" readonly="1" options="{'no_create': True}"/></h1>
-                    </div>-->
                     <div class="oe_title">
+                        <label for="specimen_id" class="oe_edit_only"/>
                         <h1>
-                            <field name="taxon_name" readonly="1"/>
+                            <field name="specimen_id" readonly="1"/>
                         </h1>
                     </div>
                     <group string="Información del Espécimen">
                         <field name="taxon_name" readonly="1"/>
+                        <field name="specimen_code" readonly="1"/>
                     </group>
 
                     <group>
@@ -116,6 +114,9 @@
                 <field name="obsolete"/>
                 <field name="scan_count"/>
                 <field name="download_count"/>
+                <field name="taxon_name"/>
+                <field name="specimen_code"/>
+                <field name="specimen_ref"/>
                 <templates>
                     <t t-name="kanban-box">
                         <div class="oe_kanban_global_click">
@@ -124,6 +125,8 @@
                             </div>
                             <div class="oe_kanban_details">
                                 <strong><field name="taxon_name"/></strong>
+                                <div><field name="specimen_code"/></div>
+                                <div class="text-muted small"><field name="specimen_ref"/></div>
                                 <div class="mt-2">
                                     <span class="badge badge-info">
                                         <i class="fa fa-eye"/> <field name="scan_count"/> escaneos
@@ -150,13 +153,14 @@
         <field name="model">herbario.qr.code</field>
         <field name="arch" type="xml">
             <search string="Buscar Códigos QR">
+                <field name="specimen_id"/>
                 <field name="qr_url"/>
                 <filter name="filter_active" string="Activos" domain="[('obsolete', '=', False)]"/>
                 <filter name="filter_obsolete" string="Obsoletos" domain="[('obsolete', '=', True)]"/>
                 <filter name="filter_scanned" string="Escaneados" domain="[('scan_count', '>', 0)]"/>
                 <filter name="filter_not_scanned" string="No Escaneados" domain="[('scan_count', '=', 0)]"/>
                 <group expand="0" string="Agrupar por">
-                    <filter name="group_taxon" string="Taxón" context="{'group_by': 'taxon_id'}"/>
+                    <filter name="group_specimen" string="Espécimen" context="{'group_by': 'specimen_id'}"/>
                     <filter name="group_date" string="Fecha de Generación" context="{'group_by': 'generation_date'}"/>
                 </group>
             </search>
@@ -174,7 +178,7 @@
                 Los códigos QR se generan automáticamente
             </p>
             <p>
-                Cada espécimen tiene su código QR único para acceso rápido a su información digital.
+                Cada espécimen tiene su código QR único que enlaza a su ficha digital.
             </p>
         </field>
     </record>

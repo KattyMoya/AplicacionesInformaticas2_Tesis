@@ -21,13 +21,34 @@ class HerbarioQRCode(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     
     # ========== RELACIONES ==========
-    taxon_id = fields.Many2one(
-        'herbario.taxon',
-        string='Taxón',
+    specimen_id = fields.Many2one(
+        'herbario.specimen',
+        string='Espécimen',
         required=True,
         ondelete='cascade',
         index=True,
         tracking=True
+    )
+
+    taxon_id = fields.Many2one(
+        'herbario.taxon',
+        related='specimen_id.taxon_id',
+        string='Taxón',
+        store=True,
+        readonly=True
+    )
+
+    specimen_code = fields.Char(
+        related='specimen_id.codigo_herbario',
+        string="Código de Espécimen",
+        store=True,
+        readonly=True
+    )
+
+    specimen_ref = fields.Char(
+        string="Referencia Técnica",
+        compute='_compute_specimen_ref',
+        store=False
     )
 
     # ========== DATOS DEL QR ==========
@@ -151,26 +172,35 @@ class HerbarioQRCode(models.Model):
 
     # ========== CONSTRAINTS ==========
     _sql_constraints = [
-        ('unique_active_taxon_qr',
-         'UNIQUE(taxon_id, status)',
-         'Solo puede haber un código QR activo por taxón.')
+        ('unique_active_specimen_qr',
+         'UNIQUE(specimen_id, status)',
+         'Solo puede haber un código QR activo por espécimen.')
     ]
 
     # ========== MÉTODOS COMPUTADOS ==========
-    @api.depends('taxon_id', 'taxon_id.name')
+    @api.depends('specimen_id', 'specimen_id.taxon_id.name')
     def _compute_taxon_name(self):
         """Obtiene el nombre científico del taxón"""
         for record in self:
-            record.taxon_name = record.taxon_id.name if record.taxon_id else ''
+            record.taxon_name = record.specimen_id.taxon_id.name if record.specimen_id and record.specimen_id.taxon_id else ''
 
-    @api.depends('taxon_id.name')
+    @api.depends('specimen_id')
+    def _compute_specimen_ref(self):
+        for record in self:
+            if record.specimen_id:
+                record.specimen_ref = f"herbario.specimen,{record.specimen_id.id}"
+            else:
+                record.specimen_ref = ""
+
+    @api.depends('specimen_id.codigo_herbario', 'version')
     def _compute_qr_filename(self):
         """Genera nombre de archivo para descarga"""
         for record in self:
-            if record.taxon_id and record.taxon_id.name:
-                record.qr_filename = f"QR_{record.taxon_id.name.replace(' ', '_')}_v{record.version}.png"
+            if record.specimen_id and record.specimen_id.codigo_herbario:
+                safe_code = "".join([c for c in record.specimen_id.codigo_herbario if c.isalnum() or c in ('-','_')])
+                record.qr_filename = f"QR_{safe_code}_v{record.version}.png"
             else:
-                record.qr_filename = f"QR_code_v{record.version}.png"
+                record.qr_filename = f"QR_specimen_v{record.version}.png"
 
     @api.depends('qr_image')
     def _compute_file_size(self):
@@ -249,17 +279,17 @@ class HerbarioQRCode(models.Model):
 
     @api.constrains('status')
     def _check_active_qr(self):
-        """Valida que solo haya un QR activo por taxón"""
+        """Valida que solo haya un QR activo por espécimen"""
         for record in self:
             if record.status == 'active':
                 active_qrs = self.search([
-                    ('taxon_id', '=', record.taxon_id.id),
+                    ('specimen_id', '=', record.specimen_id.id),
                     ('status', '=', 'active'),
                     ('id', '!=', record.id)
                 ])
                 if active_qrs:
                     raise ValidationError(
-                        'Ya existe un código QR activo para este taxón. '
+                        'Ya existe un código QR activo para este espécimen. '
                         'Desactive el existente antes de activar uno nuevo.'
                     )
 
@@ -283,7 +313,7 @@ class HerbarioQRCode(models.Model):
         self.write({'obsolete': True})
         
         new_qr = self.create({
-            'taxon_id': self.taxon_id.id,
+            'specimen_id': self.specimen_id.id,
             'qr_url': self.qr_url,
             'qr_data': self.qr_data,
             'version': self.version + 1,
@@ -338,13 +368,55 @@ class HerbarioQRCode(models.Model):
         self.ensure_one()
         self.write({'obsolete': not self.obsolete})
 
+    @api.model
+    def generate_qr_for_specimen(self, specimen):
+        """
+        Busca un QR activo para un espécimen. Si no existe, crea uno nuevo.
+        Devuelve una acción para abrir la vista del QR.
+        """
+        if not specimen:
+            raise ValidationError("No se puede generar un QR sin un espécimen asociado.")
+
+        # Buscar un QR activo existente para este espécimen
+        existing_qr = self.search([
+            ('specimen_id', '=', specimen.id),
+            ('status', '=', 'active')
+        ], limit=1)
+
+        if existing_qr:
+            qr_id = existing_qr.id
+        else:
+            # Si no hay QR activo, crear uno nuevo apuntando al detalle del espécimen
+            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            # Ruta al detalle del espécimen
+            qr_url = f"{base_url}/herbario/specimen/{specimen.id}"
+
+            new_qr = self.create({
+                'specimen_id': specimen.id,
+                'qr_url': qr_url,
+                'status': 'active',  # Lo creamos como activo directamente
+                'resolution': '600',
+                'error_correction': 'H',
+            })
+            qr_id = new_qr.id
+
+        return {
+            'name': 'Código QR del Espécimen',
+            'type': 'ir.actions.act_window',
+            'res_model': 'herbario.qr.code',
+            'view_mode': 'form',
+            'res_id': qr_id,
+            'target': 'current',
+        }
+
     # ========== DISPLAY NAME ==========
     def name_get(self):
         """Personaliza el nombre mostrado"""
         result = []
         for record in self:
             status_label = dict(record._fields['status'].selection).get(record.status, '')
-            name = f"{record.taxon_name} v{record.version} [{status_label}]"
+            specimen_code = record.specimen_id.codigo_herbario or 'Sin Código'
+            name = f"QR {specimen_code} v{record.version} [{status_label}]"
             if record.obsolete:
                 name += " (OBSOLETO)"
             result.append((record.id, name))

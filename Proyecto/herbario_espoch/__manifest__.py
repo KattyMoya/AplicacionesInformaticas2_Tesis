@@ -35,9 +35,6 @@
         'data/sequence_data.xml',
         'data/optimization.sql',
 
-        # Reportes
-        #'reports/specimen_report.xml',
-
         # Vistas Backend
         'views/specimen_views.xml',
         'views/collection_site_views.xml',
@@ -45,10 +42,12 @@
         'views/qr_code_views.xml',
         'views/audit_log_views.xml',
         'views/herbario_menus.xml',
+        'views/location_views.xml',
 
         # Vistas Website
         'views/website_templates.xml',
         'views/website_menus.xml',
+        'views/website_snippets.xml',
 
     ],
     'assets': {
@@ -56,10 +55,13 @@
             'herbario_espoch/static/src/css/herbario_backend.css',
         ],
         'web.assets_frontend': [
-            'herbario_espoch/static/src/css/herbario_frontend.css',
-            'herbario_espoch/static/src/js/filters.js',
-            'herbario_espoch/static/src/js/gallery.js',
-            'herbario_espoch/static/src/js/maps.js',
+            # Tus archivos JS personalizados
+            'herbario_espoch/static/src/css/herbario_website.css',
+            'herbario_espoch/static/src/js/repository_snippet.js',
+            'herbario_espoch/static/src/js/statistics_pages.js',
+        ],
+        'web.assets_qweb': [
+            'herbario_espoch/static/src/xml/*.xml',
         ],
     },
     'images': ['static/description/banner.png'],

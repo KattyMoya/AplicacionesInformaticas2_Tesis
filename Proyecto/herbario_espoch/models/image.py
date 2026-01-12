@@ -4,7 +4,9 @@ from datetime import datetime
 import base64
 import hashlib
 import os
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
+
+import logging
 from io import BytesIO
 import json
 
@@ -186,54 +188,77 @@ class HerbarioImage(models.Model):
         for record in self:
             if not record.taxon_id and not record.specimen_id:
                 raise ValidationError('La imagen debe estar relacionada con un Taxón')
-    
+
+    @api.constrains('file_size')
+    def _check_file_size(self):
+        """Valida que el tamaño del archivo no exceda el límite."""
+        max_size_kb = 10000
+        for record in self:
+            if record.file_size and record.file_size > (max_size_kb * 1024):
+                raise ValidationError(f"El tamaño de la imagen no puede exceder los {max_size_kb} KB. El archivo actual pesa {record.file_size_human}.")
+
+    @api.constrains('mime_type')
+    def _check_mime_type(self):
+        """Valida que el tipo de archivo sea uno de los permitidos."""
+        allowed_mimes = ['image/jpeg', 'image/png', 'image/tiff']
+        for record in self:
+            if record.mime_type and record.mime_type not in allowed_mimes:
+                raise ValidationError(f"Tipo de archivo no permitido. Solo se aceptan imágenes en formato JPG, PNG y TIFF. El archivo subido es de tipo: {record.mime_type}")
+
+
 
     def _process_image(self, image_data_b64):
         """Procesa la imagen y genera todos los metadatos y miniaturas"""
         if not image_data_b64:
             return {}
         
+        image_bytes = base64.b64decode(image_data_b64)
+        image_stream = BytesIO(image_bytes)
+        
         try:
-            image_bytes = base64.b64decode(image_data_b64)
-            image_stream = BytesIO(image_bytes)
+            # Intentar abrir la imagen. Si esto falla, Pillow no reconoce el formato.
             image = Image.open(image_stream)
-            
-            result = {
-                'file_size': len(image_bytes),
-                'image_width': image.width,
-                'image_height': image.height,
-                'file_hash': hashlib.sha256(image_bytes).hexdigest(),
-            }
-            
-            # Generar miniaturas
-            # Miniatura pequeña (80x80)
-            image_small = image.copy()
-            image_small.thumbnail((80, 80), Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.ANTIALIAS)
-            output_small = BytesIO()
-            image_small.save(output_small, format='PNG')
-            result['thumbnail'] = base64.b64encode(output_small.getvalue())
-            
-            # Miniatura mediana (200x200)
-            image_medium = image.copy()
-            image_medium.thumbnail((200, 200), Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.ANTIALIAS)
-            output_medium = BytesIO()
-            image_medium.save(output_medium, format='PNG')
-            result['thumbnail_medium'] = base64.b64encode(output_medium.getvalue())
-            
-            # Extraer EXIF
-            exif_dict = self._extract_exif_dict(image)
-            if exif_dict:
-                result['exif_data'] = json.dumps(exif_dict)
-                result['exif_camera'] = exif_dict.get('camera', '')
-                result['exif_date'] = exif_dict.get('date_taken', False)
-            
-            return result
-        except Exception as e:
-            return {
-                'file_size': 0,
-                'image_width': 0,
-                'image_height': 0,
-            }
+        except UnidentifiedImageError:
+            # Esta excepción se lanza específicamente cuando el archivo no es un formato de imagen reconocido.
+            raise ValidationError("El archivo subido no es un formato de imagen válido o está corrupto. Solo se aceptan JPG, PNG y TIFF.")
+        # Mapear formato de Pillow a tipo MIME
+        format_to_mime = {
+            'JPEG': 'image/jpeg',
+            'PNG': 'image/png',
+            'TIFF': 'image/tiff',
+        }
+        mime_type = format_to_mime.get(image.format, 'application/octet-stream')
+
+        result = {
+            'file_size': len(image_bytes),
+            'image_width': image.width,
+            'image_height': image.height,
+            'file_hash': hashlib.sha256(image_bytes).hexdigest(),
+            'mime_type': mime_type,            }
+        
+        # Generar miniaturas
+        # Miniatura pequeña (80x80)
+        image_small = image.copy()
+        image_small.thumbnail((80, 80), Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.ANTIALIAS)
+        output_small = BytesIO()
+        image_small.save(output_small, format='PNG')
+        result['thumbnail'] = base64.b64encode(output_small.getvalue())
+        
+        # Miniatura mediana (200x200)
+        image_medium = image.copy()
+        image_medium.thumbnail((200, 200), Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.ANTIALIAS)
+        output_medium = BytesIO()
+        image_medium.save(output_medium, format='PNG')
+        result['thumbnail_medium'] = base64.b64encode(output_medium.getvalue())
+        
+        # Extraer EXIF
+        exif_dict = self._extract_exif_dict(image)
+        if exif_dict:
+            result['exif_data'] = json.dumps(exif_dict)
+            result['exif_camera'] = exif_dict.get('camera', '')
+            result['exif_date'] = exif_dict.get('date_taken', False)
+        
+        return result
 
     def _extract_exif_dict(self, image):
         """Extrae EXIF como diccionario"""
@@ -265,25 +290,34 @@ class HerbarioImage(models.Model):
             return exif_dict if exif_dict else None
         except Exception:
             return None
+            return None # Return None if any error occurs during EXIF extraction
         
     @api.onchange('image_data')
     def _onchange_image_data(self):
         """Calcula metadatos en tiempo real cuando se sube la imagen"""
         if self.image_data:
-            metadata = self._process_image(self.image_data)
-            # Actualizar los campos en el formulario (no en BD aún)
-            self.file_size = metadata.get('file_size', 0)
-            self.image_width = metadata.get('image_width', 0)
-            self.image_height = metadata.get('image_height', 0)
-            self.file_hash = metadata.get('file_hash', False)
-            self.thumbnail = metadata.get('thumbnail', False)
-            self.thumbnail_medium = metadata.get('thumbnail_medium', False)
-            self.exif_data = metadata.get('exif_data', False)
-            self.exif_camera = metadata.get('exif_camera', '')
-            self.exif_date = metadata.get('exif_date', False)
-            # 🔹 Si no tiene nombre de archivo, generar automáticamente
-            if not self.filename_original:
-                self.filename_original = "imagen_%s" % fields.Datetime.now().strftime("%Y%m%d_%H%M%S")
+            try:
+                metadata = self._process_image(self.image_data)
+                # Actualizar los campos en el formulario (no en BD aún)
+                self.file_size = metadata.get('file_size', 0)
+                self.image_width = metadata.get('image_width', 0)
+                self.image_height = metadata.get('image_height', 0)
+                self.file_hash = metadata.get('file_hash', False)
+                self.thumbnail = metadata.get('thumbnail', False)
+                self.mime_type = metadata.get('mime_type', 'application/octet-stream')
+                self.thumbnail_medium = metadata.get('thumbnail_medium', False)
+                self.exif_data = metadata.get('exif_data', False)
+                self.exif_camera = metadata.get('exif_camera', '')
+                self.exif_date = metadata.get('exif_date', False)
+                # 🔹 Si no tiene nombre de archivo, generar automáticamente
+                if not self.filename_original:
+                    self.filename_original = "imagen_%s" % fields.Datetime.now().strftime("%Y%m%d_%H%M%S")
+            except ValidationError as e:
+                # Si _process_image lanza una ValidationError, la relanzamos para que la UI la muestre.
+                raise e
+            except Exception:
+                # Para cualquier otro error inesperado al procesar la imagen.
+                raise ValidationError("El archivo subido no es un formato de imagen válido o está corrupto. Solo se aceptan JPG, PNG y TIFF.")
 
     @api.depends('file_size')
     def _compute_file_size_human(self):
@@ -340,6 +374,14 @@ class HerbarioImage(models.Model):
         if not vals.get('filename_original'):
             vals['filename_original'] = "imagen_%s" % datetime.now().strftime("%Y%m%d_%H%M%S")
 
+        # --- SOLUCIÓN: Asignar automáticamente el Taxón desde el Espécimen ---
+        # Si se proporciona un specimen_id pero no un taxon_id, se hereda el taxón del espécimen.
+        # Esto soluciona el error de validación al crear imágenes desde la vista de espécimen.
+        if vals.get('specimen_id') and not vals.get('taxon_id'):
+            specimen = self.env['herbario.specimen'].browse(vals['specimen_id'])
+            if specimen.taxon_id:
+                vals['taxon_id'] = specimen.taxon_id.id
+
         # 🔹 Procesar metadatos de imagen
         if vals.get('image_data'):
             metadata = self._process_image(vals['image_data'])
@@ -365,13 +407,21 @@ class HerbarioImage(models.Model):
         # 🔹 Crear el registro
         image = super(HerbarioImage, self).create(vals)
 
-        # 🔹 Registrar en el historial del espécimen padre
+        # 🔹 Registrar en el historial del taxón o espécimen padre
         if image.taxon_id:
             description = f"Se añadió una nueva imagen ('{image.filename_original or 'imagen sin nombre'}') al taxón '{image.taxon_id.name}'."
             self.env['herbario.audit.log']._log_change(
                 res_model='herbario.taxon',
                 res_id=image.taxon_id.id,
-                action='updated', # Añadir una imagen es una actualización del espécimen
+                action='updated',
+                description=description
+            )
+        if image.specimen_id:
+            description = f"Se añadió una nueva imagen ('{image.filename_original or 'imagen sin nombre'}') al espécimen '{image.specimen_id.codigo_herbario}'."
+            self.env['herbario.audit.log']._log_change(
+                res_model='herbario.specimen',
+                res_id=image.specimen_id.id,
+                action='updated',
                 description=description
             )
 
@@ -409,22 +459,29 @@ class HerbarioImage(models.Model):
         return super(HerbarioImage, self).write(vals)
 
     def unlink(self):
-        """Borrado lógico"""
+        """
+        Sobrescribe el borrado para invalidar la caché de los especímenes afectados
+        y asegurar que la imagen principal se recalcule.
+        """
         for image in self:
-            # Registrar fecha de eliminación
-            image.write({'deleted_at': fields.Datetime.now()})
+            # Encontrar los especímenes que usan el mismo taxón que la imagen a borrar
+            specimens_to_update = self.env['herbario.specimen'].search([
+                ('taxon_id', '=', image.taxon_id.id)
+            ])
+            
+            # Invalidar la caché del campo 'primary_image' para esos especímenes.
+            # Esto forzará a Odoo a recalcularlo la próxima vez que se acceda.
+            specimens_to_update.invalidate_recordset(['primary_image'])
 
+            # Notificar a la UI que los especímenes han cambiado para forzar el refresco.
+            # Una escritura vacía es suficiente para disparar la notificación.
+            specimens_to_update.write({})
+            
             if image.taxon_id:
                 description = f"Se eliminó una imagen ('{image.filename_original or 'imagen sin nombre'}') del taxón '{image.taxon_id.name}'."
                 self.env['herbario.audit.log']._log_change('herbario.taxon', image.taxon_id.id, 'updated', description)
-
-                # Si era imagen principal, limpiar la referencia visual
-                #if image.is_primary:
-                    #image.specimen_id.primary_image = False
-
-                # 🔁 Forzar recomputar la miniatura del espécimen
-                #image.specimen_id._compute_primary_image()
-        return True
+        
+        return super(HerbarioImage, self).unlink()
 
     def action_set_as_primary(self):
         """Establece esta imagen como principal"""

@@ -1,38 +1,6 @@
 from odoo import models, fields, api  # Agrega 'api' aquí
 from odoo.exceptions import ValidationError
 
-"""class HerbarioTaxon(models.Model):
-    _name = 'herbario.taxon'
-    _description = 'Taxón del Herbario'
-    _order = 'nombre_cientifico'
-
-    nombre_cientifico = fields.Char(string='Nombre Científico', required=True, unique=True, index=True)
-    familia = fields.Char(string='Familia', index=True)
-    genero = fields.Char(string='Género', index=True)
-    especie = fields.Char(string='Especie', index=True)
-    #autor_cientifico = fields.Char(string='Autor Científico')
-
-    # Relación
-    # En taxon.py
-    image_ids = fields.One2many('herbario.image', 'taxon_id', string='Imágenes')
-    #specimen_ids = fields.One2many('herbario.specimen', 'taxon_id', string='Especímenes')
-
-    # Campos computados
-    total_specimens = fields.Integer(string='Total Especímenes', compute='_compute_total_specimens', store=True)
-
-    @api.depends('specimen_ids')
-    def _compute_total_specimens(self):
-        for record in self:
-            record.total_specimens = len(record.specimen_ids)
-
-    def name_get(self):
-        #Personaliza el nombre mostrado
-        result = []
-        for record in self:
-            name = record.nombre_cientifico
-            result.append((record.id, name))
-        return result"""
-
 class HerbarioFamily(models.Model):
     _name = 'herbario.family'
     _description = 'Familia Botánica'
@@ -87,15 +55,15 @@ class HerbarioTaxon(models.Model):
     )
     genero = fields.Char(
         string='Género',
-        required=True,
         index=True,
-        tracking=True
+        tracking=True,
+        default='Indeterminado'
     )
     especie = fields.Char(
         string='Especie',
-        required=True,
         index=True,
-        tracking=True
+        tracking=True,
+        default='Indeterminado'
     )
 
     # Relaciones
@@ -115,7 +83,9 @@ class HerbarioTaxon(models.Model):
     image_ids = fields.One2many(
         'herbario.image',
         'taxon_id',
-        string='Imágenes'
+        string='Imágenes',
+        auto_join=True,
+        ondelete='cascade'
     )
     qr_code_ids = fields.One2many(
         'herbario.qr.code',
@@ -144,8 +114,12 @@ class HerbarioTaxon(models.Model):
     @api.depends('genero', 'especie')
     def _compute_scientific_name(self):
         for record in self:
-            if record.genero and record.especie:
-                record.name = f"{record.genero} {record.especie}"
+            if record.genero:
+                # Si hay especie y no es "indeterminado", concatenar. Si no, solo Género.
+                if record.especie and record.especie.lower() not in ['indeterminado', 'sp', 'sp.']:
+                    record.name = f"{record.genero} {record.especie}"
+                else:
+                    record.name = record.genero
             else:
                 record.name = False
 

@@ -15,9 +15,11 @@ class HerbarioHerbarium(models.Model):
         tracking=True
     )
 
-    specimen_ids = fields.One2many(
+    specimen_ids = fields.Many2many(
         'herbario.specimen',
+        'herbario_specimen_herbarium_rel',
         'herbarium_id',
+        'specimen_id',
         string='Especímenes'
     )
 
@@ -55,7 +57,7 @@ class Province(models.Model):
 
     name = fields.Char(string='Nombre de la Provincia', required=True, tracking=True)
     country_id = fields.Many2one('herbario.country', string='País', 
-                                required=True, ondelete='cascade', tracking=True)
+                                required=False, ondelete='cascade', tracking=True)
     lower_political_ids = fields.One2many('herbario.lower.political', 'province_id', 
                                          string='Cantones/Distritos')
     
@@ -76,7 +78,7 @@ class LowerPolitical(models.Model):
 
     name = fields.Char(string='Nombre del Cantón', required=True, tracking=True)
     province_id = fields.Many2one('herbario.province', string='Provincia', 
-                                 required=True, ondelete='cascade', tracking=True)
+                                 required=False, ondelete='cascade', tracking=True)
     locality_ids = fields.One2many('herbario.locality', 'lower_id', string='Localidades')
 
     _sql_constraints = [
@@ -96,7 +98,7 @@ class Locality(models.Model):
 
     name = fields.Char(string='Nombre de la Localidad', required=True, tracking=True)
     lower_id = fields.Many2one('herbario.lower.political', string='Cantón', 
-                              required=True, ondelete='cascade', tracking=True)
+                              required=False, ondelete='cascade', tracking=True)
     vicinity_ids = fields.One2many('herbario.vicinity', 'locality_id', string='Vecindades')
     description = fields.Text(string='Descripción', tracking=True)
     
@@ -132,7 +134,7 @@ class Vicinity(models.Model):
 
     name = fields.Text(string='Nombre de la Vecindad', required=True, tracking=True)
     locality_id = fields.Many2one('herbario.locality', string='Localidad', 
-                                 required=True, ondelete='cascade', tracking=True)
+                                 required=False, ondelete='cascade', tracking=True)
     description = fields.Text(string='Descripción', tracking=True)
     specimen_ids = fields.One2many('herbario.specimen', 'vicinity_id', string='Especímenes')
     coordinate_ids = fields.One2many('herbario.coordinates', 'vicinity_id', 
@@ -221,45 +223,76 @@ class Coordinates(models.Model):
         ('otro', 'Otro')
     ], string='Tipo de Punto', default='referencia')
 
+    # ---------- Helper para parsear coordenadas en texto ----------
+    def _parse_coordenadas_zona_str(self, text):
+        """
+        Recibe una cadena tipo '01.34S 78.40W' y devuelve (lat, lon) como floats,
+        o (None, None) si no puede parsear.
+        """
+        if not text or not isinstance(text, str):
+            return (None, None)
+        pattern = re.compile(
+            r"^\s*(\d{1,2}(?:\.\d{1,6})?)\s*([NSns])\s+(\d{1,3}(?:\.\d{1,6})?)\s*([WEwe])\s*$",
+            re.IGNORECASE
+        )
+        m = pattern.match(text.strip())
+        if not m:
+            return (None, None)
+        try:
+            lat_val, lat_dir, lon_val, lon_dir = m.groups()
+            lat = float(lat_val)
+            if lat_dir.upper() == 'S':
+                lat = -lat
+            lon = float(lon_val)
+            if lon_dir.upper() == 'W':
+                lon = -lon
+            return (lat, lon)
+        except Exception:
+            return (None, None)
+
     # ========== MÉTODOS ONCHANGE PARA AUTOMATIZACIÓN ==========
     @api.onchange('coordenadas_zona')
     def _onchange_coordenadas_zona(self):
         """
         Parsea el campo 'coordenadas_zona' y actualiza latitud y longitud.
-        Admite formatos como: 01.34S 78.40W
+        Admite formatos como: '01.34S 78.40W'
         """
         if not self.coordenadas_zona:
+            self.latitude = 0.0
+            self.longitude = 0.0
             return
 
-        # Expresión regular para capturar los valores y direcciones
-        pattern = re.compile(
-            r"^\s*(\d{1,2}(?:\.\d{1,6})?)\s*([NSns])"  # Latitud: 1-2 dígitos, decimal opcional, N o S
-            r"\s+"                                # Espacio separador
-            r"(\d{1,3}(?:\.\d{1,6})?)\s*([WEwe])\s*$", # Longitud: 1-3 dígitos, decimal opcional, W o E
-            re.IGNORECASE
-        )
-        
-        match = pattern.match(self.coordenadas_zona)
+        lat, lon = self._parse_coordenadas_zona_str(self.coordenadas_zona)
+        if lat is not None and lon is not None:
+            self.latitude = lat
+            self.longitude = lon
+        else:
+            # If parsing fails, clear lat/lon to indicate invalid input
+            self.latitude = 0.0
+            self.longitude = 0.0
 
-        if match:
-            try:
-                lat_val, lat_dir, lon_val, lon_dir = match.groups()
-
-                # Convertir a float y aplicar signo
-                lat = float(lat_val)
-                if lat_dir.upper() == 'S':
-                    lat = -lat
-
-                lon = float(lon_val)
-                if lon_dir.upper() == 'W':
-                    lon = -lon
-
-                # Asignar a los campos, Odoo manejará la actualización en la vista
-                self.latitude = lat
-                self.longitude = lon
-            except (ValueError, TypeError):
-                # Si la conversión falla, no hacer nada
-                pass
+        # Original parsing logic (now replaced by _parse_coordenadas_zona_str)
+        # # Expresión regular para capturar los valores y direcciones
+        # pattern = re.compile(
+        #     r"^\s*(\d{1,2}(?:\.\d{1,6})?)\s*([NSns])"  # Latitud: 1-2 dígitos, decimal opcional, N o S
+        #     r"\s+"                                # Espacio separador
+        #     r"(\d{1,3}(?:\.\d{1,6})?)\s*([WEwe])\s*$", # Longitud: 1-3 dígitos, decimal opcional, W o E
+        #     re.IGNORECASE
+        # )
+        # match = pattern.match(self.coordenadas_zona)
+        # if match:
+        #     try:
+        #         lat_val, lat_dir, lon_val, lon_dir = match.groups()
+        #         lat = float(lat_val)
+        #         if lat_dir.upper() == 'S':
+        #             lat = -lat
+        #         lon = float(lon_val)
+        #         if lon_dir.upper() == 'W':
+        #             lon = -lon
+        #         self.latitude = lat
+        #         self.longitude = lon
+        #     except (ValueError, TypeError):
+        #         pass
 
     @api.onchange('latitude', 'longitude')
     def _onchange_lat_lon(self):
@@ -319,57 +352,18 @@ class Coordinates(models.Model):
     @api.model
     def create(self, vals):
         """Convierte comas a puntos automáticamente al crear"""
-        vals = self._convert_comma_to_dot(vals)
-        return super().create(vals)
+        return super(Coordinates, self).create(vals)
 
     def write(self, vals):
         """Convierte comas a puntos automáticamente al actualizar"""
-        vals = self._convert_comma_to_dot(vals)
-        return super().write(vals)
-
-    def _convert_comma_to_dot(self, vals):
-        """
-        Convierte separadores decimales de coma (,) a punto (.)
-        Soluciona el error: invalid input syntax for type numeric
-        """
-        coordinate_fields = ['latitude', 'longitude', 'elevation']
-
-        for field in coordinate_fields:
-            if field in vals and vals[field] is not None:
-                value = vals[field]
-
-                # Si viene como string con coma
-                if isinstance(value, str):
-                    # Limpiar espacios
-                    value = value.strip()
-
-                    # Reemplazar coma por punto
-                    if ',' in value:
-                        value = value.replace(',', '.')
-
-                    # Convertir a float
-                    try:
-                        vals[field] = float(value) if value else None
-                    except ValueError:
-                        # Si falla, dejar como None o el original
-                        vals[field] = None
-
-                # Asegurar que sea float si es numérico
-                elif isinstance(value, (int, float)):
-                    vals[field] = float(value)
-
-        return vals
+        return super(Coordinates, self).write(vals)
 
     # ========== ACCIONES ==========
     def action_open_in_maps(self):
         """Abre la ubicación en Google Maps en nueva pestaña"""
         self.ensure_one()
         if not self.maps_url:
-            raise ValidationError(
-                'Esta ubicación no tiene coordenadas GPS válidas.\n'
-                'Por favor ingrese latitud y longitud.'
-            )
-
+            raise ValidationError('Esta ubicación no tiene coordenadas GPS válidas.')
         return {
             'type': 'ir.actions.act_url',
             'url': self.maps_url,
@@ -429,36 +423,36 @@ class CollectionSite(models.Model):
     country_id = fields.Many2one(
         'herbario.country', 
         string='País',
-        ondelete='restrict',
+        ondelete='set null',
         tracking=True
     )
     province_id = fields.Many2one(
         'herbario.province', 
         string='Provincia',
-        ondelete='restrict',
+        ondelete='set null',
         tracking=True,
-        domain="[('country_id', '=', country_id)]"
+        domain="['|', ('country_id', '=', country_id), ('country_id', '=', False)]"
     )
     lower_id = fields.Many2one(
         'herbario.lower.political', 
         string='Cantón/Distrito',
-        ondelete='restrict',
+        ondelete='set null',
         tracking=True,
-        domain="[('province_id', '=', province_id)]"
+        domain="['|', ('province_id', '=', province_id), ('province_id', '=', False)]"
     )
     locality_id = fields.Many2one(
         'herbario.locality', 
         string='Localidad',
-        ondelete='restrict',
+        ondelete='set null',
         tracking=True,
-        domain="[('lower_id', '=', lower_id)]"
+        domain="['|', ('lower_id', '=', lower_id), ('lower_id', '=', False)]"
     )
     vicinity_id = fields.Many2one(
         'herbario.vicinity', 
         string='Vecindad',
-        ondelete='restrict',
+        ondelete='set null',
         tracking=True,
-        domain="[('locality_id', '=', locality_id)]"
+        domain="['|', ('locality_id', '=', locality_id), ('locality_id', '=', False)]"
     )
 
     # ========== DATOS DE COLECCIÓN ==========
@@ -466,7 +460,8 @@ class CollectionSite(models.Model):
         string='Número de Colección',
         tracking=True,
         index=True,
-        help='Número único asignado por el colector'
+        help='Número único asignado por el colector',
+        copy=False
     )
     fecha_recoleccion = fields.Date(
         string='Fecha de Recolección',
@@ -505,42 +500,186 @@ class CollectionSite(models.Model):
         help='Coordenadas GPS asociadas a este sitio de colección'
     )
 
-    # Campo relacionado para la entrada rápida de coordenadas en la vista de árbol
+    # CORRECCIÓN: Campo virtual (no related) para la entrada de datos.
+    # Ahora es un campo related para que refleje el valor del coordinate_id
     coordenadas_zona = fields.Char(
+        string='Coordenadas (Ingresar)',
         related='coordinate_id.coordenadas_zona',
-        string='Coordenadas en Grados',
-        readonly=False,  # Permite la edición para crear/actualizar la coordenada
-        help="Ingrese coordenadas en formato '01.34S 78.40W'. "
-             "Esto creará o actualizará el registro de coordenadas."
+        readonly=False, # Permitir edición para que el onchange funcione
+        store=True, # Almacenar para búsqueda, el valor se sincroniza con el related
+        force_save="1", # Asegura que los cambios se guarden en el registro relacionado
+        help="Ingrese coordenadas en formato '01.34S 78.40W'."
     )
 
     # ========== CAMPOS RELATED DE COORDENADAS ==========
     # Estos campos hacen que los datos de las coordenadas sean accesibles
     # directamente desde el sitio de colección, lo que es necesario para las vistas.
+    # Se añade force_save="1" para que los cambios en estos campos se propaguen
+    # al registro de herbario.coordinates.
     latitude = fields.Float(
         related='coordinate_id.latitude',
         string='Latitud (Relacionada)',
         store=True, # store=True es necesario para que el campo sea buscable
-        readonly=False
+        readonly=False, # Permitir que el onchange lo actualice
+        force_save="1" # Asegura que los cambios se guarden en el registro relacionado
     )
     longitude = fields.Float(
         related='coordinate_id.longitude',
         string='Longitud (Relacionada)',
         store=True,
-        readonly=False
+        readonly=False, # Permitir que el onchange lo actualice
+        force_save="1" # Asegura que los cambios se guarden en el registro relacionado
     )
     elevation = fields.Float(
         related='coordinate_id.elevation',
         string='Elevación (Relacionada)',
         store=True,
-        readonly=False
+        readonly=False, # Permitir edición manual o por onchange
+        force_save="1" # Asegura que los cambios se guarden en el registro relacionado
     )
+
+    # Campos 'sombra' de tipo Char para la entrada de datos en la vista de árbol.
+    # Esto evita el error de conversión de Odoo con comas decimales.
+    latitude_char = fields.Char(
+        string='Latitud (Texto)',
+        compute='_compute_char_fields',
+        inverse='_inverse_latitude_char',
+        store=False # No se guardan en la base de datos
+    )
+    longitude_char = fields.Char(
+        string='Longitud (Texto)',
+        compute='_compute_char_fields',
+        inverse='_inverse_longitude_char',
+        store=False
+    )
+    # ========== MÉTODOS ONCHANGE PARA AUTOMATIZACIÓN EN COLLECTION.SITE ==========
+    @api.onchange('coordenadas_zona')
+    def _onchange_coordenadas_zona_collection_site(self):
+        """
+        Parsea el campo 'coordenadas_zona' y actualiza latitud y longitud
+        en el CollectionSite, lo que a su vez actualiza el Coordinate relacionado.
+        """
+        if not self.coordenadas_zona:
+            self.latitude = 0.0
+            self.longitude = 0.0
+            return
+
+        # Llama al helper de parseo del modelo herbario.coordinates
+        lat, lon = self.env['herbario.coordinates']._parse_coordenadas_zona_str(self.coordenadas_zona)
+        if lat is not None and lon is not None:
+            self.latitude = lat
+            self.longitude = lon
+        else:
+            self.latitude = 0.0
+            self.longitude = 0.0
+
+    @api.onchange('latitude', 'longitude')
+    def _onchange_lat_lon_collection_site(self):
+        """
+        Actualiza el campo de texto 'coordenadas_zona' cuando cambian
+        manualmente la latitud o longitud.
+        """
+        # Este onchange ahora también actualiza los campos _char para mantener la sincronización.
+        self._compute_char_fields()
+
+        # Solo actuar si ambos campos tienen un valor numérico y están en el rango correcto.
+        lat_valid = isinstance(self.latitude, float) and -90 <= self.latitude <= 90
+        lon_valid = isinstance(self.longitude, float) and -180 <= self.longitude <= 180
+
+        if lat_valid and lon_valid:
+            lat_abs = abs(self.latitude)
+            lat_dir = 'S' if self.latitude < 0 else 'N'
+            lon_abs = abs(self.longitude)
+            lon_dir = 'W' if self.longitude < 0 else 'E'
+            
+            self.coordenadas_zona = f"{lat_abs:.6f}{lat_dir} {lon_abs:.6f}{lon_dir}"
+
+    # ========== ONCHANGE PARA JERARQUÍA DE UBICACIÓN ==========
+    @api.onchange('country_id')
+    def _onchange_country_id(self):
+        """ Limpieza hacia abajo: si cambia el país, se limpian los niveles inferiores. """
+        if self.province_id and self.province_id.country_id != self.country_id:
+            self.province_id = False
+            self.lower_id = False
+            self.locality_id = False
+            self.vicinity_id = False
+
+    @api.onchange('province_id')
+    def _onchange_province_id(self):
+        """ Corrección hacia arriba y limpieza hacia abajo. """
+        if self.province_id and self.province_id.country_id:
+            self.country_id = self.province_id.country_id
+        if self.lower_id and self.lower_id.province_id != self.province_id:
+            self.lower_id = False
+            self.locality_id = False
+            self.vicinity_id = False
+
+    @api.onchange('lower_id')
+    def _onchange_lower_id(self):
+        """ Corrección hacia arriba y limpieza hacia abajo. """
+        if self.lower_id and self.lower_id.province_id:
+            self.province_id = self.lower_id.province_id
+        if self.locality_id and self.locality_id.lower_id != self.lower_id:
+            self.locality_id = False
+            self.vicinity_id = False
+
+    @api.onchange('locality_id')
+    def _onchange_locality_id(self):
+        """ Corrección hacia arriba y limpieza hacia abajo. """
+        if self.locality_id and self.locality_id.lower_id:
+            self.lower_id = self.locality_id.lower_id
+        if self.vicinity_id and self.vicinity_id.locality_id != self.locality_id:
+            self.vicinity_id = False
+
+    @api.onchange('vicinity_id')
+    def _onchange_vicinity_id(self):
+        """ Corrección hacia arriba. """
+        if self.vicinity_id and self.vicinity_id.locality_id:
+            self.locality_id = self.vicinity_id.locality_id
+            # Esto desencadenará en cascada los otros onchanges hacia arriba
+            # para rellenar cantón, provincia y país si no están ya establecidos.
+            if self.locality_id.lower_id:
+                self.lower_id = self.locality_id.lower_id
+
+
+    # Métodos compute/inverse para los campos Char 'sombra'
+    @api.depends('latitude', 'longitude')
+    def _compute_char_fields(self):
+        """Actualiza los campos de texto cuando los campos float cambian."""
+        for record in self:
+            record.latitude_char = str(record.latitude or '0.0')
+            record.longitude_char = str(record.longitude or '0.0')
+            
+    def _inverse_latitude_char(self):
+        """
+        Se activa al escribir en el campo de texto de latitud.
+        Limpia la entrada y actualiza el campo float real.
+        El onchange de 'latitude' se encargará del resto.
+        """
+        for record in self:
+            if record.latitude_char:
+                try:
+                    # Reemplazar coma y convertir a float
+                    clean_value = record.latitude_char.strip().replace(',', '.')
+                    record.latitude = float(clean_value)
+                except (ValueError, TypeError):
+                    record.latitude = 0.0
+
+    def _inverse_longitude_char(self):
+        """Actualiza el campo float cuando el campo de texto de longitud cambia."""
+        for record in self:
+            if record.longitude_char:
+                try:
+                    clean_value = record.longitude_char.strip().replace(',', '.')
+                    record.longitude = float(clean_value)
+                except (ValueError, TypeError):
+                    record.longitude = 0.0
 
     maps_url = fields.Char(
         related='coordinate_id.maps_url',
         string='URL del Mapa (Relacionado)',
         store=True,
-        readonly=True
+        readonly=True # Este sí debe ser siempre de solo lectura
     )
 
     # ========== CAMPOS COMPUTADOS ==========
@@ -572,6 +711,44 @@ class CollectionSite(models.Model):
             record.ubicacion_completa = ', '.join(partes) if partes else 'Sin ubicación registrada'
 
     # ========== VALIDACIONES ==========
+    # CORRECCIÓN: Sobrescribir create y write para manejar la creación/actualización de coordenadas
+    @api.model
+    def create(self, vals):
+        # Si no se proporciona un coordinate_id, pero hay datos de coordenadas,
+        # crear un registro de coordenadas vacío para que los campos related puedan escribir en él.
+        # Los campos related con force_save=True se encargarán de escribir los valores.
+
+        if not vals.get('coordinate_id') and any(vals.get(f) for f in ['coordenadas_zona', 'latitude', 'longitude', 'elevation']):
+            new_coord = self.env['herbario.coordinates'].create({})
+            vals['coordinate_id'] = new_coord.id
+
+        site = super(CollectionSite, self).create(vals)
+
+        if site.specimen_id:
+            description = f"Se agregó el sitio de colección #{site.id} ({site.numero_coleccion or 'Sin Nro.'}) al espécimen."
+            self.env['herbario.audit.log']._log_change(
+                res_model='herbario.specimen',
+                res_id=site.specimen_id.id,
+                action='updated', # Agregar una ubicación es una actualización del espécimen
+                description=description
+            )
+        return site
+
+    def write(self, vals):
+        # Procesar cada registro individualmente para manejar la creación de coordinate_id si es necesario
+        for site in self:
+            current_vals = dict(vals) # Copia de vals para cada registro
+
+            # Si no hay coordinate_id pero se están proporcionando datos de coordenadas, crear uno.
+            if not site.coordinate_id and any(current_vals.get(f) for f in ['coordenadas_zona', 'latitude', 'longitude', 'elevation']):
+                new_coord = self.env['herbario.coordinates'].create({})
+                current_vals['coordinate_id'] = new_coord.id
+
+            # Llamar al super.write para el registro actual con los valores potencialmente modificados
+            super(CollectionSite, site).write(current_vals)
+
+        return True # write method should return True
+
     @api.constrains('is_primary', 'specimen_id')
     def _check_only_one_primary(self):
         """Asegura que solo haya UNA ubicación principal por espécimen"""
@@ -584,10 +761,8 @@ class CollectionSite(models.Model):
                 ])
                 if other_primary:
                     raise ValidationError(
-                        f'YA EXISTE UNA UBICACIÓN PRINCIPAL\n\n'
-                        f'El espécimen "{record.specimen_id.codigo_herbario}" ya tiene '
-                        f'otra ubicación marcada como principal.\n\n'
-                        f'Desmarca la otra antes de marcar esta como principal.'
+                        f'Ya existe una ubicación principal para el espécimen "{record.specimen_id.codigo_herbario}".\n\n'
+                        f'Por favor, desmarque la otra ubicación antes de marcar esta como principal.'
                     )
 
     # ========== ACCIONES ==========
@@ -668,82 +843,3 @@ class CollectionSite(models.Model):
                 'sticky': False,
             }
         }
-
-    # ========== AUDITORÍA DE CAMBIOS ==========
-    @api.model
-    def create(self, vals):
-        """Registra la creación de un nuevo sitio de colección."""
-        site = super(CollectionSite, self).create(vals)
-        if site.specimen_id:
-            description = f"Se agregó el sitio de colección #{site.id} ({site.numero_coleccion or 'Sin Nro.'}) al espécimen."
-            self.env['herbario.audit.log']._log_change(
-                res_model='herbario.specimen',
-                res_id=site.specimen_id.id,
-                action='updated', # Agregar una ubicación es una actualización del espécimen
-                description=description
-            )
-        return site
-
-    def write(self, vals):
-        """Registra las modificaciones en los sitios de colección."""
-        tracked_fields = {
-            'numero_coleccion': 'Número de Colección',
-            'fecha_recoleccion': 'Fecha de Recolección',
-            'country_id': 'País',
-            'province_id': 'Provincia',
-            'lower_id': 'Cantón/Distrito',
-            'locality_id': 'Localidad',
-            'vicinity_id': 'Vecindad',
-            'coordinate_id': 'Coordenadas GPS',
-            'latitude': 'Latitud',
-            'longitude': 'Longitud',
-            'elevation': 'Elevación',
-            'habitat': 'Hábitat',
-            'notas_campo': 'Notas de Campo',
-        }
-
-        for site in self:
-            if not site.specimen_id:
-                continue
-
-            changes_to_log = []
-            for field, label in tracked_fields.items():
-                if field in vals:
-                    old_value = site[field]
-                    new_value_from_vals = vals[field]
-
-                    # Manejo para campos Many2one
-                    if site._fields[field].type == 'many2one':
-                        old_display = old_value.display_name if old_value else "No asignado"
-                        # El nuevo valor puede ser un ID (int)
-                        if isinstance(new_value_from_vals, int):
-                            new_record = self.env[site._fields[field].comodel_name].browse(new_value_from_vals)
-                            new_display = new_record.display_name if new_record else "No asignado"
-                        else:
-                            new_display = new_value_from_vals or "No asignado"
-                        
-                        if old_display != new_display:
-                            changes_to_log.append({'field': f"Ubicación: {label}", 'old': old_display, 'new': new_display})
-
-                    # Manejo para otros tipos de campos
-                    elif old_value != new_value_from_vals:
-                        changes_to_log.append({'field': f"Ubicación: {label}", 'old': str(old_value or ''), 'new': str(new_value_from_vals or '')})
-            
-            if changes_to_log:
-                description = f"Se modificó un sitio de colección del espécimen '{site.specimen_id.display_name}'."
-                self.env['herbario.audit.log']._log_change('herbario.specimen', site.specimen_id.id, 'updated', description, changes=changes_to_log)
-
-        return super(CollectionSite, self).write(vals)
-
-    def unlink(self):
-        """Registra la eliminación de un sitio de colección."""
-        for site in self:
-            if site.specimen_id:
-                description = f"Se eliminó el sitio de colección #{site.id} (Nro. Colección: {site.numero_coleccion or 'N/A'}) del espécimen."
-                self.env['herbario.audit.log']._log_change(
-                    res_model='herbario.specimen',
-                    res_id=site.specimen_id.id,
-                    action='updated', # Eliminar una ubicación es una actualización del espécimen
-                    description=description
-                )
-        return super(CollectionSite, self).unlink()

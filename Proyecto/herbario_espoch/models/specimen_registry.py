@@ -1,6 +1,8 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 import re
+from datetime import datetime
+import uuid
 
 
 class SpecimenRegistry(models.Model):
@@ -8,6 +10,16 @@ class SpecimenRegistry(models.Model):
     _description = 'Registro de Especímenes Botánicos'
     _order = 'codigo_herbario desc'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+
+    # Identificador único para URL pública (Hash)
+    url_hash = fields.Char(
+        string='Hash URL',
+        required=True,
+        copy=False,
+        readonly=True,
+        index=True,
+        default=lambda self: str(uuid.uuid4())
+    )
 
     # Identificación
     codigo_herbario = fields.Char(
@@ -21,9 +33,6 @@ class SpecimenRegistry(models.Model):
         tracking=True,
         help='Código único CHEP-XXXXXXX (se genera automáticamente al guardar)'
     )
-    # Campo auxiliar para saber si ya está guardado
-    is_new_record = fields.Boolean(default=True, copy=False)
-    
     numero_cartulina = fields.Integer(
         string='Número de Cartulina',
         index=True,
@@ -34,11 +43,54 @@ class SpecimenRegistry(models.Model):
     taxon_id = fields.Many2one(
         'herbario.taxon',
         string='Taxón',
-        required=True,
         ondelete='restrict',
         index=True,
         tracking=True
     )
+
+    # --- CAMPOS SOMBRA PARA CREACIÓN/EDICIÓN INLINE DE TAXÓN ---
+    # Estos campos no se almacenan y solo se usan en la vista para la entrada de datos.
+    taxon_name_new = fields.Char(
+        string='Nombre Científico (Nuevo Taxón)',
+        help="Escriba el nombre completo (ej. 'Género especie') para crear un nuevo taxón.",
+        store=False
+    )
+    taxon_family_id = fields.Many2one(
+        'herbario.family',
+        string='Familia (Nuevo Taxón)',
+        help="Seleccione la familia para crear un nuevo taxón.",
+        store=False
+    )
+    taxon_genero = fields.Char(
+        string='Género',
+        help="Género del taxón, calculado automáticamente.",
+        readonly=True,
+        store=False # No es necesario almacenarlo aquí
+    )
+    taxon_especie = fields.Char(
+        string='Especie',
+        help="Especie del taxón, calculada automáticamente.",
+        readonly=True,
+        store=False # No es necesario almacenarlo aquí
+    )
+    # Campos relacionados para mostrar el género y especie del taxón seleccionado
+    taxon_genero_related = fields.Char(
+        related='taxon_id.genero', 
+        string='Género (del Taxón)', 
+        readonly=True
+    )
+    taxon_especie_related = fields.Char(
+        related='taxon_id.especie', 
+        string='Especie (del Taxón)', 
+        readonly=True
+    )
+    taxon_family_related = fields.Many2one(
+        'herbario.family',
+        related='taxon_id.family_id',
+        string='Familia (del Taxón)',
+        readonly=True # CORRECCIÓN: Debe ser readonly para evitar creación implícita y conflictos.
+    )
+
     # Campos que vienen del taxón (related fields)
     nombre_cientifico = fields.Char(
         related='taxon_id.name',
@@ -76,19 +128,20 @@ class SpecimenRegistry(models.Model):
     )
     
     # Campos descriptivos
-    index_text = fields.Char(
-        string='Texto Índice',
+    index_text = fields.Char( # Este es el único campo necesario.
+        string='Índice',
         tracking=True,
-        help='Texto de indexación para búsquedas'
+        help='Índice de referencia. Escriba para buscar o crear, o seleccione uno existente de la lista.'
     )
     
-    herbarium_id = fields.Many2one(
+    herbarium_ids = fields.Many2many(
         'herbario.herbarium',
-        string='Herbario',
-        required=True,
-        ondelete='restrict',
+        'herbario_specimen_herbarium_rel',
+        'specimen_id',
+        'herbarium_id',
+        string='Herbarios',
         tracking=True,
-        help='Herbario al que pertenece el espécimen'
+        help='Herbarios a los que pertenece o está duplicado el espécimen'
     )
 
     # Descripción
@@ -100,7 +153,15 @@ class SpecimenRegistry(models.Model):
         string='Fenología',
         help='Estado fenológico general (floración, fructificación, etc.)'
     )
-    patente_year = fields.Integer(
+    
+    def _get_year_selection(self):
+        """Genera una lista de años desde 1950 hasta el año actual."""
+        current_year = datetime.now().year
+        # Devuelve una lista de tuplas (valor, etiqueta), ej: [('2024', '2024'), ...]
+        return [(str(year), str(year)) for year in range(current_year, 1949, -1)]
+
+    patente_year = fields.Selection(
+        selection=_get_year_selection,
         string='Año de Patente',
         help='Año de patente o registro oficial'
     )
@@ -147,12 +208,14 @@ class SpecimenRegistry(models.Model):
     )
     # Relaciones con otros modelos
     # Acceder a imágenes directamente desde taxon_id
-    # Las imágenes se relacionan con el taxón. Este campo muestra esas imágenes.
+    # Este campo ahora es el principal y está relacionado con las imágenes del taxón.
+    # Se le permite la escritura para que desde el formulario del espécimen se puedan
+    # añadir/modificar las imágenes que pertenecen al taxón.
     image_ids = fields.One2many(
         'herbario.image',
-        related='taxon_id.image_ids', # Muestra las imágenes del taxón
+        related='taxon_id.image_ids',
         string='Imágenes',
-        readonly=False # Permite la creación, el contexto de la vista se encarga del resto.
+        readonly=False # Es crucial para poder añadir imágenes desde el espécimen al taxón.
     )
 
     # Acceder a QR codes directamente desde taxon_id
@@ -169,29 +232,19 @@ class SpecimenRegistry(models.Model):
     total_ubicaciones = fields.Integer(
         string='Total de Ubicaciones',
         compute='_compute_total_ubicaciones',
-        store=True
+        store=False  # CORRECCIÓN: Quitar store=True para que se calcule siempre en tiempo real.
     )
     primary_image = fields.Binary(
         string='Imagen Principal',
         compute='_compute_primary_image'
-    )
-    primary_image_base64 = fields.Char(
-        string='Imagen Principal Base64',
-        compute='_compute_primary_image_base64'
     )
     primary_location = fields.Char(
         string='Ubicación Principal',
         compute='_compute_primary_location'
     )
 
-    # Estado y Auditoría
-    status = fields.Selection([
-        ('borrador', 'Borrador'),
-        ('revision', 'En Revisión'),
-        ('activo', 'Activo'),
-        ('archivado', 'Archivado'),
-        ('eliminado', 'Eliminado')
-    ], string='Estado', default='borrador', required=True, index=True, tracking=True)
+    # Estado y Auditoría (sin cambios, solo contexto)
+    status = fields.Selection([('borrador', 'Borrador'), ('revision', 'En Revisión'), ('activo', 'Activo'), ('archivado', 'Archivado'), ('eliminado', 'Eliminado')], string='Estado', default='borrador', required=True, index=True, tracking=True)
 
     # Campos de auditoría
     created_by = fields.Many2one('res.users', string='Creado Por', default=lambda self: self.env.user, readonly=True)
@@ -204,48 +257,24 @@ class SpecimenRegistry(models.Model):
 
     _sql_constraints = [
         ('codigo_herbario_unique', 'UNIQUE(codigo_herbario)', 'El código de herbario debe ser único.'),
+        ('url_hash_unique', 'UNIQUE(url_hash)', 'El hash de URL debe ser único.'),
     ]
     
-    @api.depends('is_new_record')
-    def _compute_codigo_herbario(self):
-        """Muestra el código provisional o el real"""
-        for record in self:
-            # Si el registro aún no tiene ID, significa que no se ha guardado todavía
-            if not record.id or record.is_new_record:
-                # Calcular el siguiente código que se asignará
-                last_specimen = self.search([
-                    ('is_new_record', '=', False),
-                    ('codigo_herbario', 'like', 'CHEP-%')
-                ], order='id desc', limit=1)
-
-                if last_specimen and last_specimen.codigo_herbario:
-                    try:
-                        last_number = int(last_specimen.codigo_herbario.split('-')[-1])
-                        next_number = last_number + 1
-                    except (ValueError, IndexError):
-                        next_number = 1
-                else:
-                    next_number = 1
-
-                record.codigo_herbario = f'CHEP-{next_number:07d} (Provisional)'
-            else:
-                # Si ya tiene un ID, asumimos que el registro ya está guardado
-                # (puedes mantener el mismo código o dejar vacío)
-                record.codigo_herbario = record.codigo_herbario or ''
-
     @api.model
     def _get_next_code(self):
         """Genera el siguiente código CHEP-XXXXXXX"""
         # Buscar el último código registrado
         last_specimen = self.search([
             ('codigo_herbario', '!=', 'Nuevo'),
-            ('codigo_herbario', 'like', 'CHEP-%')
+            ('codigo_herbario', 'like', 'CHEP-%'),
+            ('codigo_herbario', 'not like', '%(Provisional)') # Excluir códigos provisionales
         ], order='id desc', limit=1)
         
         if last_specimen and last_specimen.codigo_herbario:
             try:
                 # Extraer el número del último código (ej: CHEP-0000001 -> 1)
-                last_number = int(last_specimen.codigo_herbario.split('-')[-1])
+                code_part = last_specimen.codigo_herbario.split('-')[-1]
+                last_number = int(re.search(r'\d+', code_part).group())
                 new_number = last_number + 1
             except (ValueError, IndexError):
                 new_number = 1
@@ -255,70 +284,108 @@ class SpecimenRegistry(models.Model):
         # Generar el nuevo código con formato CHEP-0000001 (7 dígitos)
         return f'CHEP-{new_number:07d}'
 
+    @api.model
+    def _get_existing_indices(self):
+        """
+        Busca todos los valores únicos del campo index_text y los devuelve
+        en el formato que espera un campo Selection. Es una consulta eficiente.
+        """
+        self.env.cr.execute("SELECT DISTINCT index_text FROM herbario_specimen WHERE index_text IS NOT NULL AND index_text != '' ORDER BY index_text")
+        existing_values = self.env.cr.fetchall()
+        # Convierte [('A-01',), ('B-02',)] a [('A-01', 'A-01'), ('B-02', 'B-02')]
+        return [(val[0], val[0]) for val in existing_values]
+
     @api.depends('collection_site_ids')
     def _compute_total_ubicaciones(self):
         """Cuenta el total de ubicaciones desde collection_site_ids"""
         for record in self:
             record.total_ubicaciones = len(record.collection_site_ids)
     
-    @api.depends('taxon_id.image_ids')
+    @api.depends('taxon_id', 'taxon_id.image_ids', 'taxon_id.image_ids.is_primary')
     def _compute_primary_image(self):
-        """Obtiene la imagen principal del taxón"""
+        """Obtiene la imagen principal directamente desde el taxón."""
         for record in self:
+            primary_img_record = self.env['herbario.image'] # Iniciar un recordset vacío
             if record.taxon_id and record.taxon_id.image_ids:
-                primary_img = record.taxon_id.image_ids.filtered(lambda img: img.is_primary)
-                if primary_img:
-                    record.primary_image = primary_img[0].image_data
-                else:
-                    record.primary_image = record.taxon_id.image_ids[0].image_data
-            else:
-                record.primary_image = False
+                # 1. Buscar la imagen marcada como principal
+                primary_img_record = record.taxon_id.image_ids.filtered(lambda img: img.is_primary)[:1] # CORRECCIÓN: Tomar solo el primer resultado
+                # 2. Si no hay principal, tomar la primera de la lista
+                if not primary_img_record:
+                    primary_img_record = record.taxon_id.image_ids[:1]
+            
+            # Asignar el campo binario de forma segura
+            record.primary_image = primary_img_record.image_data if primary_img_record else False
 
-    @api.depends('primary_image')
-    def _compute_primary_image_base64(self):
-        """Convierte la imagen binaria a base64 string"""
-        for record in self:
-            if record.primary_image:
-                try:
-                    if isinstance(record.primary_image, str):
-                        record.primary_image_base64 = record.primary_image
-                    else:
-                        record.primary_image_base64 = record.primary_image.decode('utf-8')
-                except (AttributeError, UnicodeDecodeError):
-                    record.primary_image_base64 = False
-            else:
-                record.primary_image_base64 = False
-
+    @api.onchange('taxon_name_new')
+    def _onchange_taxon_name_new(self):
+        """
+        Parsea el nombre del nuevo taxón para autocompletar género y especie.
+        """
+        if self.taxon_name_new:
+            parts = self.taxon_name_new.strip().split()
+            if len(parts) >= 2:
+                self.taxon_genero = parts[0].capitalize()
+                self.taxon_especie = ' '.join(parts[1:]).lower()
+            elif len(parts) == 1:
+                self.taxon_genero = parts[0].capitalize()
+                self.taxon_especie = 'indeterminado'
+        else:
+            self.taxon_genero = ''
+            self.taxon_especie = ''
     
-    @api.depends('collection_site_ids', 'collection_site_ids.ubicacion_completa')
+    @api.depends('collection_site_ids', 'collection_site_ids.is_primary', 'collection_site_ids.ubicacion_completa')
     def _compute_primary_location(self):
         """Obtiene la ubicación completa desde collection_site_ids usando el campo computado"""
         for record in self:
             primary_site = record.collection_site_ids.filtered(lambda s: s.is_primary) or record.collection_site_ids[:1]
             if primary_site:
-                site = primary_site[0]
-                record.primary_location = site.ubicacion_completa or 'Sin ubicación registrada'
+                record.primary_location = primary_site[0].ubicacion_completa
             else:
                 record.primary_location = 'Sin ubicación registrada'
 
-    def _compute_audit_log_ids(self):
-        """
-        Busca en el log de auditoría todos los registros relacionados con este espécimen.
-        """
-        for specimen in self:
-            specimen.audit_log_ids = self.env['herbario.audit.log'].search([
-                ('res_model', '=', self._name),
-                ('res_id', '=', specimen.id)
-            ])
-
     @api.model
-    def create(self, vals):
-        """Override para asignar código y registrar creación en el nuevo sistema de auditoría."""
+    def create(self, vals, **kwargs):
+        """
+        Override para:
+        1. Manejar la creación de un nuevo taxón a partir de los campos sombra.
+        2. Asignar el código secuencial del herbario.
+        3. Registrar la creación en el log de auditoría.
+        """
+        # --- LÓGICA DE CREACIÓN DE TAXÓN ---
+        if not vals.get('taxon_id') and vals.get('taxon_name_new') and vals.get('taxon_family_id'):
+            taxon_name = vals.get('taxon_name_new')
+            family_val = vals.get('taxon_family_id') # Puede ser un ID (int) o un comando (tuple)
+            
+            final_family_id = None
+
+            # 1. Determinar el ID de la familia, manejando la creación "al vuelo".
+            if isinstance(family_val, int):
+                # Caso 1: Se seleccionó una familia existente.
+                final_family_id = family_val
+            elif isinstance(family_val, tuple) and family_val[0] == 0:
+                # Caso 2: Se está creando una nueva familia. El valor es (0, 0, {'name': '...'})
+                family_create_vals = family_val[2]
+                # Buscar si ya existe para evitar duplicados, si no, crearla.
+                family = self.env['herbario.family'].search([('name', '=', family_create_vals.get('name'))], limit=1)
+                final_family_id = family.id if family else self.env['herbario.family'].create(family_create_vals).id
+
+            # 2. Con el ID de la familia resuelto, buscar o crear el taxón.
+            if final_family_id:
+                new_taxon_id = self._find_or_create_taxon_id(taxon_name, final_family_id)
+                if new_taxon_id:
+                    # Asignar el ID del taxón resultante de vuelta a 'vals' para que se guarde.
+                    vals['taxon_id'] = new_taxon_id
+        elif vals.get('taxon_name_new') and not vals.get('taxon_family_id'):
+            # Si solo se da el nombre pero no la familia, lanzar el error.
+            raise ValidationError("Debe seleccionar una familia para crear un nuevo taxón.")
+
         if not vals.get('codigo_herbario') or vals.get('codigo_herbario') == 'Nuevo':
             vals['codigo_herbario'] = self._get_next_code()
         
-        specimen = super(SpecimenRegistry, self).create(vals)
-        
+        # Limpiar los campos sombra ANTES de llamar a super() para evitar conflictos.
+        clean_vals = {k: v for k, v in vals.items() if k not in ['taxon_name_new', 'taxon_family_id']}
+        specimen = super(SpecimenRegistry, self).create(clean_vals)
+
         # Registrar creación en el nuevo audit_log
         description = f"Se creó el espécimen '{specimen.display_name}' con código {specimen.codigo_herbario}."
         self.env['herbario.audit.log']._log_change(
@@ -329,14 +396,49 @@ class SpecimenRegistry(models.Model):
         )
         return specimen
 
+    def _find_or_create_taxon_id(self, taxon_name, family_id):
+        """
+        Busca o crea un taxón y DEVUELVE su ID.
+        Esta es una función helper que no modifica diccionarios.
+        """
+        if not taxon_name or not family_id:
+            return None
+
+        # 1. Parsear el nombre para obtener género y especie
+        parts = taxon_name.strip().split()
+        genero = 'Indeterminado'
+        especie = 'indeterminado'
+        if len(parts) >= 2:
+            genero = parts[0].capitalize()
+            especie = ' '.join(parts[1:]).lower()
+        elif len(parts) == 1:
+            genero = parts[0].capitalize()
+
+        # 2. Buscar si ya existe un taxón con estos datos
+        existing_taxon = self.env['herbario.taxon'].search([
+            # CORRECCIÓN: La restricción SQL es solo por genero y especie.
+            # La búsqueda debe coincidir con la restricción para evitar errores de unicidad.
+            ('genero', '=', genero),
+            ('especie', '=', especie)
+        ], limit=1)
+
+        if existing_taxon:
+            return existing_taxon.id
+        else:
+            # Si no existe, creamos el nuevo taxón y devolvemos su ID
+            new_taxon = self.env['herbario.taxon'].create({
+                'family_id': family_id, 'genero': genero, 'especie': especie})
+            return new_taxon.id
+
     def write(self, vals):
-        """Override para registrar cambios en el historial con el nuevo sistema de auditoría."""
+        """Override para crear taxón si es necesario y registrar cambios."""
+
         # Lista de campos a auditar
         tracked_fields = {
             'taxon_id': 'Taxón',
             'numero_cartulina': 'Número de Cartulina',
             'index_text': 'Texto Índice',
-            'herbarium_id': 'Herbario',
+            'herbarium_ids': 'Herbarios',
             'author_ids': 'Autores',
             'collector_ids': 'Colectores',
             'determiner_ids': 'Determinadores',
@@ -358,14 +460,39 @@ class SpecimenRegistry(models.Model):
                     if field in vals:
                         old_values[specimen.id][field] = specimen[field]
 
-        result = super(SpecimenRegistry, self).write(vals)
+        # --- LÓGICA DE CREACIÓN DE TAXÓN (para edición) ---
+        if not vals.get('taxon_id') and vals.get('taxon_name_new') and vals.get('taxon_family_id'):
+            taxon_name = vals.get('taxon_name_new')
+            family_val = vals.get('taxon_family_id')
+            final_family_id = None
+
+            if isinstance(family_val, int):
+                final_family_id = family_val
+            elif isinstance(family_val, tuple) and family_val[0] == 0:
+                family_create_vals = family_val[2]
+                family = self.env['herbario.family'].search([('name', '=', family_create_vals.get('name'))], limit=1)
+                final_family_id = family.id if family else self.env['herbario.family'].create(family_create_vals).id
+
+            if final_family_id:
+                new_taxon_id = self._find_or_create_taxon_id(taxon_name, final_family_id)
+                if new_taxon_id:
+                    vals['taxon_id'] = new_taxon_id
+        elif vals.get('taxon_name_new') and not vals.get('taxon_family_id'):
+            raise ValidationError("Debe seleccionar una familia para crear un nuevo taxón.")
+
+        # Limpiar los campos sombra ANTES de llamar a super()
+        clean_vals = {k: v for k, v in vals.items() if k not in ['taxon_name_new', 'taxon_family_id']}
+        if not clean_vals: # Si después de limpiar no hay nada que escribir, no continuar.
+            return True
+
+        result = super(SpecimenRegistry, self).write(clean_vals)
 
         for record in self:
             if record.id in old_values:
                 changes_to_log = []
                 for field, old_value in old_values[record.id].items():
                     new_value = record[field]
-                    
+
                     # Formatear valores para que sean legibles en el log
                     if record._fields[field].type == 'many2one':
                         old_display = old_value.display_name if old_value else "No asignado"
@@ -383,7 +510,7 @@ class SpecimenRegistry(models.Model):
                             'old': old_display,
                             'new': new_display,
                         })
-                
+
                 if changes_to_log:
                     description = f"Se modificó el espécimen '{record.display_name}'."
                     self.env['herbario.audit.log']._log_change(
@@ -407,34 +534,10 @@ class SpecimenRegistry(models.Model):
             )
         return super(SpecimenRegistry, self).unlink()
     
-
     def action_generate_qr(self):
         """Acción para generar código QR"""
         self.ensure_one()
-        return self.env['herbario.qr.code'].generate_qr_for_taxon(self.taxon_id)
-
-    #NUEVO: Normalización de taxones -------------------------------
-    @api.depends('nombre_cientifico', 'familia', 'genero', 'especie')
-    def _compute_taxon_id(self):
-        """Asigna o crea el taxón automáticamente basado en nombre_cientifico"""
-        for record in self:
-            if record.nombre_cientifico:
-                # Busca si ya existe un taxón con el mismo nombre científico
-                taxon = self.env['herbario.taxon'].search([
-                    ('nombre_cientifico', '=', record.nombre_cientifico)
-                ], limit=1)
-                if not taxon:
-                    # Crea un nuevo taxón si no existe
-                    taxon = self.env['herbario.taxon'].create({
-                        'nombre_cientifico': record.nombre_cientifico,
-                        'familia': record.familia,
-                        'genero': record.genero,
-                        'especie': record.especie,
-                        #'autor_cientifico': record.autor_cientifico,
-                    })
-                record.taxon_id = taxon.id
-            else:
-                record.taxon_id = False
+        return self.env['herbario.qr.code'].generate_qr_for_specimen(self)
 
     def action_view_history(self):
         """Acción para ver historial de cambios"""
@@ -459,3 +562,13 @@ class SpecimenRegistry(models.Model):
                 name += f" ({record.collection_date})"
             result.append((record.id, name))
         return result
+
+    def _compute_audit_log_ids(self):
+        """
+        Busca en el log de auditoría todos los registros relacionados con este espécimen.
+        """
+        for specimen in self:
+            specimen.audit_log_ids = self.env['herbario.audit.log'].search([
+                ('res_model', '=', self._name),
+                ('res_id', '=', specimen.id)
+            ])

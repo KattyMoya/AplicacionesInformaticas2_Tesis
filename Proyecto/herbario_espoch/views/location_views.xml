@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 
+    ================================================================
+    VISTAS SIMPLIFICADAS PARA CREACIÓN RÁPIDA (MODALES)
+    Estas vistas de formulario se utilizan cuando se crea un nuevo 
+    registro de ubicación desde un campo Many2one, mostrando solo 
+    los campos esenciales.
+    ================================================================
+    -->
+
+    <!-- Vista Formulario Simplificada para País -->
+    <record id="view_herbario_country_form_simple" model="ir.ui.view">
+        <field name="name">herbario.country.form.simple</field>
+        <field name="model">herbario.country</field>
+        <field name="priority">20</field> <!-- Prioridad alta para que se use en modales -->
+        <field name="arch" type="xml">
+            <form string="Crear País">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Formulario Simplificada para Provincia -->
+    <record id="view_herbario_province_form_simple" model="ir.ui.view">
+        <field name="name">herbario.province.form.simple</field>
+        <field name="model">herbario.province</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Crear Provincia">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="country_id" options="{'no_create': True}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Formulario Simplificada para Cantón/Distrito -->
+    <record id="view_herbario_lower_political_form_simple" model="ir.ui.view">
+        <field name="name">herbario.lower.political.form.simple</field>
+        <field name="model">herbario.lower.political</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Crear Cantón/Distrito">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="province_id" options="{'no_create': True}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Formulario Simplificada para Localidad (ya la tenías implícitamente, pero la definimos para consistencia) -->
+    <record id="view_herbario_locality_form_simple" model="ir.ui.view">
+        <field name="name">herbario.locality.form.simple</field>
+        <field name="model">herbario.locality</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Crear Localidad">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="lower_id" options="{'no_create': True}"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Formulario Simplificada para Vecindad -->
+    <record id="view_herbario_vicinity_form_simple" model="ir.ui.view">
+        <field name="name">herbario.vicinity.form.simple</field>
+        <field name="model">herbario.vicinity</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <form string="Crear Vecindad">
+                <sheet>
+                    <group>
+                        <field name="name" widget="text"/>
+                        <field name="locality_id" options="{'no_create': True}"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>
